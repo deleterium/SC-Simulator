@@ -824,10 +824,11 @@ function cpu() {
 
     if (currCode !== undefined)
     {
-        MachineState.balanceNQT -= Constants.stepfee * currCode.stepFee
-        if (MachineState.balanceNQT < 0) {
+        let account=BlockchainState.accounts.find(obj => obj.id == MachineState.contract)
+        account.balance -= Constants.stepfee * currCode.stepFee
+        if (account.balance < 0) {
             MachineState.frozen=true
-            MachineState.balanceNQT += Constants.stepfee * currCode.stepFee
+            account.balance += Constants.stepfee * currCode.stepFee
             return false   
         }
         return currCode.execute(lastRegexResult)

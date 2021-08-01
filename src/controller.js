@@ -1,6 +1,6 @@
 'use strict'
 
-const Controller = {
+const ContractController = {
 
     run: function (){
 
@@ -83,5 +83,58 @@ const Controller = {
             MachineState.instructionPointer === null) {
             return "Contract execution done on this round"
         }
+    },
+
+    // Queue TX for current block to contract
+    processBlock: function () {
+
+        // Activate contract if it was sleeping
+        if (MachineState.sleepUntilBlock > BlockchainState.currentBlock) {
+            return
+        } else if (MachineState.sleepUntilBlock == BlockchainState.currentBlock) {
+            MachineState.stopped = false
+            MachineState.frozen = false
+            MachineState.finished = false
+            MachineState.running = true
+            return
+        }
+
+        // find new incoming tx
+        let incomingTX = BlockchainState.transactions.find(TX => TX.recipient == MachineState.contract && TX.processed === undefined)
+        if (incomingTX !== undefined) {
+            MachineState.stopped = false
+            MachineState.frozen = false
+            MachineState.finished = false
+            MachineState.running = true
+            MachineState.currentTX = incomingTX
+            incomingTX.processed = true
+        }
+    },
+}
+
+const BlockchainController = {
+    processBlock: function (){
+        let txs = UpcomingTransactions.filter(obj => obj.blockheight == BlockchainState.currentBlock)
+        let counter=0n
+
+        txs.forEach( curTX => {
+            let account = BlockchainState.accounts.find(obj => obj.id == curTX.sender)
+            if (account == undefined) {
+                BlockchainState.accounts.push( { id: curTX.sender, balance: -curTX.amount })
+            } else {
+                account.balance -= curTX.amount
+            }
+
+            account = BlockchainState.accounts.find(obj => obj.id == curTX.recipient)
+            if (account == undefined) {
+                BlockchainState.accounts.push( { id: curTX.sender, balance: curTX.amount })
+            } else {
+                account.balance += curTX.amount
+            }
+            counter++
+            curTX.timestamp = (BigInt(curTX.blockheight) << 32n) + counter
+
+            BlockchainState.transactions.push(curTX)
+        })
     },
 }

@@ -7,6 +7,8 @@ const MachineState = {}
 
 const BlockchainState =  {
     currentBlock: 1,
+    accounts: [],
+    transactions: [],
 }
 
 const SimulatorState = {
@@ -27,6 +29,20 @@ const Constants = {
 
 }
 
+var UpcomingTransactions = {}
+
+/*
+[
+    {
+        "sender": "10000n",
+        "recipient": "999n",
+        "amount": "100000000n",
+        "blockheight": "2",
+        "messageText": "text message to contract",
+        "messageHex": "526166666c6520656e6465642e00000000000000000000000000000000000000"
+    }
+]
+*/
 
 function onLoad() {
     var scode = document.getElementById("source-code");
@@ -71,13 +87,13 @@ function addBreakPoint(){
 }
 
 function runContract (){
-    var retCode=Controller.run()
+    var retCode=ContractController.run()
     inform(retCode)
     updatePage()
 }
 
 function stepContract(){
-    var retCode = Controller.step()
+    var retCode = ContractController.step()
     if (retCode === undefined) {
         inform("Step done.")
     } else {
@@ -98,7 +114,7 @@ function auto_stepContract(click){
         return
     }
 
-    var retCode = Controller.step()
+    var retCode = ContractController.step()
     if (retCode === undefined) {
         auto_step_timer=setTimeout(auto_stepContract, Constants.auto_step_delay)
         inform("Auto-stepping...")
@@ -120,17 +136,19 @@ function forgeBlock(){
 
     BlockchainState.currentBlock++
 
-    // Activate contract if it is not sleeping
-    if (MachineState.sleepUntilBlock <= BlockchainState.currentBlock) {
-        MachineState.stopped = false
-        MachineState.frozen = false
-        MachineState.finished = false
-        MachineState.running = true
-    }
+    UpcomingTransactions = JSON.parse(document.getElementById("transactions").value, (key, value) => {
+        if (typeof value === "string" && /^\d+n$/.test(value)) {
+            return BigInt(value.substr(0, value.length - 1));
+        }
+        return value;
+    })
+    //document.getElementById("transactions").value = JSON.stringify(UpcomingTransactions.filter(obj => obj.blockheight != BlockchainState.currentBlock), stringifyReplacer, "    ")
 
-    // Adds signa to contract (simulating incoming TX)
-    MachineState.balanceNQT += Constants.forge_add_balance
-    inform("New block forged.")
+    BlockchainController.processBlock()
+
+    ContractController.processBlock()
+    inform("New block forged!")
+
     updatePage()
 }
 
@@ -142,7 +160,6 @@ function deploy(){
     MachineState.stopped=false
     MachineState.finished=false
     MachineState.dead=false
-    MachineState.balanceNQT=Constants.deploy_add_balance
     MachineState.creator= Constants.creatorID
     MachineState.contract= Constants.contractID
     MachineState.DataPages= Constants.contractDPages
@@ -152,8 +169,16 @@ function deploy(){
     MachineState.Memory= []
     MachineState.UserStack= []
     MachineState.CodeStack= []
+    MachineState.currentTX= {}
     MachineState.PCS= null
     MachineState.ERR= null
+
+    BlockchainState.currentBlock= 1
+    BlockchainState.accounts= []
+    BlockchainState.transactions= []
+
+    BlockchainState.accounts.push( { id: Constants.contractID, balance: Constants.deploy_add_balance} )
+    //    transactions: [],
 
     SimulatorState.breakpoints=[]
 
@@ -227,7 +252,7 @@ function updatePage(){
     output += MachineState.dead.toString() + '</td>'
 
     output += '</tr><tr>'
-    output += '<td colspan="2"  class="taleft">Balance: '+MachineState.balanceNQT.toString(10) + '</td>'
+    output += '<td colspan="2"  class="taleft">Balance: '+BlockchainState.accounts.find(obj => obj.id == MachineState.contract).balance.toString(10) + '</td>'
     output += '<td title="Instruction pointer (next line)">IP: '+MachineState.instructionPointer.toString() + '</td>'
     output += '<td> '+'' + '</td>'
     /*output += '<td>: '+'' + '</td>'*/
@@ -241,7 +266,7 @@ function updatePage(){
               '<th>Unsigned dec</th><th>Signed dec</th></tr>'
     for (let idx = 0; idx<MachineState.Memory.length; idx++){
         currVal = MachineState.Memory[idx].value
-        if (currVal == SimulatorState.lastUpdateMemory[idx].value) {
+        if (SimulatorState.lastUpdateMemory[idx] !== undefined && currVal == SimulatorState.lastUpdateMemory[idx].value) {
             output +='<tr><td>'
         } else {
             output +='<tr class="updatedVal"><td>'
@@ -276,7 +301,7 @@ function updatePage(){
     }
 
     // Blockchain status
-    document.getElementById("blockchain_output").innerHTML = JSON.stringify(BlockchainState, null,"   ")
+    document.getElementById("blockchain_output").innerHTML = JSON.stringify(BlockchainState, stringifyReplacer, "   ")
 
     // Save last memory state
     SimulatorState.lastUpdateMemory = clone(MachineState.Memory)
@@ -301,8 +326,7 @@ function stringifyReplacer(key, value) {
         || key == "stopped"
         || key == "finished"
         || key == "dead"
-        || key == "instructionPointer"
-        || key == "balanceNQT") {
+        || key == "instructionPointer" ) {
         return
     }
     if (typeof value === 'bigint') {
