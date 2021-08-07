@@ -1,7 +1,7 @@
 'use strict';
 
 // Author: Rui Deleterium
-// Project: https://github.com/deleterium/SmartC
+// Project: https://github.com/deleterium/SC-Simulator
 // License: BSD 3-Clause License
 // Some parts based on w3schools code for highlighting howto
 
@@ -17,56 +17,56 @@ function asm_highlight(txt) {
      /*opCode, Size,  Matching RegEx */
         [0xf0,  0,  /^\s*$/ ],
         [0xf1,  0,  /^\s*(\w+):\s*$/ ],
-        [0xf2,  0,  /^\s*(\^comment)\s+(.*)/ ],
-        [0xf3,  0,  /^\s*(\^declare)\s+(\w+)\s*$/ ],
-        [0xf4,  0,  /^\s*(\^const)\s+(.*)/ ],
-        [0xf5,  0,  /^\s*(\^program)\s+(\w+)\s+([\s\S]+)$/ ],
-        [0x01, 13,  /^\s*(SET)\s+@(\w+)\s+#([\da-f]{16})\b\s*$/ ],          // SET @var #0000000000000001
-        [0x02,  9,  /^\s*(SET)\s+@(\w+)\s+\$(\w+)\s*$/ ],                   // SET @var $var
-        [0x03,  5,  /^\s*CLR\s+@(\w+)\s*$/ ],
-        [0x04,  5,  /^\s*INC\s+@(\w+)\s*$/ ],
-        [0x05,  5,  /^\s*DEC\s+@(\w+)\s*$/ ],
-        [0x06,  9,  /^\s*ADD\s+@(\w+)\s+\$(\w+)\s*$/ ],
-        [0x07,  9,  /^\s*SUB\s+@(\w+)\s+\$(\w+)\s*$/ ],
-        [0x08,  9,  /^\s*MUL\s+@(\w+)\s+\$(\w+)\s*$/ ],
-        [0x09,  9,  /^\s*DIV\s+@(\w+)\s+\$(\w+)\s*$/ ],
-        [0x0a,  9,  /^\s*BOR\s+@(\w+)\s+\$(\w+)\s*$/ ],
-        [0x0b,  9,  /^\s*AND\s+@(\w+)\s+\$(\w+)\s*$/ ],
-        [0x0c,  9,  /^\s*XOR\s+@(\w+)\s+\$(\w+)\s*$/ ],
-        [0x0d,  5,  /^\s*NOT\s+@(\w+)\s*$/ ],
-        [0x0e,  9,  /^\s*SET\s+@(\w+)\s+\$\(\$(\w+)\)\s*$/ ],
-        [0x0f, 13,  /^\s*SET\s+@(\w+)\s+\$\(\$(\w+)\s*\+\s*\$(\w+)\)\s*$/ ],
-        [0x10,  5,  /^\s*PSH\s+\$(\w+)\s*$/ ],
-        [0x11,  5,  /^\s*POP\s+@(\w+)\s*$/ ],
-        [0x12,  5,  /^\s*(JSR)\s+:(\w+)\s*$/ ],                             // JSR :function
+        [0xf2,  0,  /^(\s*\^comment)(\s+.*)/ ],
+        [0xf3,  0,  /^(\s*\^declare)(\s+\w+\s*)$/ ],
+        [0xf4,  0,  /^(\s*\^const)(\s+.*)/ ],
+        [0xf5,  0,  /^(\s*\^program\s+\w+)(\s+[\s\S]+)$/ ],
+        [0x01, 13,  /^(\s*SET\s+)(@\w+\s+)(#[\da-f]{16}\b\s*)$/ ],          // SET @var #0000000000000001
+        [0x02,  9,  /^(\s*SET\s+)(@\w+\s+)(\$\w+\s*)$/ ],                   // SET @var $var
+        [0x03,  5,  /^(\s*CLR\s+)(@\w+\s*)$/ ],
+        [0x04,  5,  /^(\s*INC\s+)(@\w+\s*)$/ ],
+        [0x05,  5,  /^(\s*DEC\s+)(@\w+\s*)$/ ],
+        [0x06,  9,  /^(\s*ADD\s+)(@\w+\s+)(\$\w+\s*)$/ ],
+        [0x07,  9,  /^(\s*SUB\s+)(@\w+\s+)(\$\w+\s*)$/ ],
+        [0x08,  9,  /^(\s*MUL\s+)(@\w+\s+)(\$\w+\s*)$/ ],
+        [0x09,  9,  /^(\s*DIV\s+)(@\w+\s+)(\$\w+\s*)$/ ],
+        [0x0a,  9,  /^(\s*BOR\s+)(@\w+\s+)(\$\w+\s*)$/ ],
+        [0x0b,  9,  /^(\s*AND\s+)(@\w+\s+)(\$\w+\s*)$/ ],
+        [0x0c,  9,  /^(\s*XOR\s+)(@\w+\s+)(\$\w+\s*)$/ ],
+        [0x0d,  5,  /^(\s*NOT\s+)(@\w+\s*)$/ ],
+        [0x0e,  9,  /^(\s*SET\s+)(@\w+)(\s+\$\()(\$\w+)(\)\s*)$/ ],
+        [0x0f, 13,  /^(\s*SET\s+)(@\w+\s+)(\$\()(\$\w+)(\s*\+\s*)(\$\w+)(\)\s*)$/ ],
+        [0x10,  5,  /^(\s*PSH\s+)(\$\w+\s*)$/ ],
+        [0x11,  5,  /^(\s*POP\s+)(@\w+\s*)$/ ],
+        [0x12,  5,  /^(\s*JSR\s+)(:\w+\s*)$/ ],                             // JSR :function
         [0x13,  1,  /^\s*RET\s*$/ ],
-        [0x14,  9,  /^\s*SET\s+@\(\$(\w+)\)\s+\$(\w+)\s*$/ ],
-        [0x15, 13,  /^\s*SET\s+@\(\$(\w+)\s*\+\s*\$(\w+)\)\s+\$(\w+)\s*$/ ],
-        [0x16,  9,  /^\s*MOD\s+@(\w+)\s+\$(\w+)\s*$/ ],
-        [0x17,  9,  /^\s*SHL\s+@(\w+)\s+\$(\w+)\s*$/ ],
-        [0x18,  9,  /^\s*SHR\s+@(\w+)\s+\$(\w+)\s*$/ ],
-        [0x1a,  5,  /^\s*(JMP)\s+:(\w+)\s*$/ ],                             // JMP :label
-        [0x1b,  6,  /^\s*(BZR)\s+\$(\w+)\s+:(\w+)\s*$/ ],                   // BZR $var :label
-        [0x1e,  6,  /^\s*(BNZ)\s+\$(\w+)\s+:(\w+)\s*$/ ],                   // BZR $var :label
-        [0x1f, 10,  /^\s*(BGT)\s+\$(\w+)\s+\$(\w+)\s+:(\w+)\s*$/ ],         // BGT $var $var :label
-        [0x20, 10,  /^\s*(BLT)\s+\$(\w+)\s+\$(\w+)\s+:(\w+)\s*$/ ],         // BLT $var $var :label
-        [0x21, 10,  /^\s*(BGE)\s+\$(\w+)\s+\$(\w+)\s+:(\w+)\s*$/ ],         // BGE $var $var :label
-        [0x22, 10,  /^\s*(BLE)\s+\$(\w+)\s+\$(\w+)\s+:(\w+)\s*$/ ],         // BLE $var $var :label
-        [0x23, 10,  /^\s*(BEQ)\s+\$(\w+)\s+\$(\w+)\s+:(\w+)\s*$/ ],         // BEQ $var $var :label
-        [0x24, 10,  /^\s*(BNE)\s+\$(\w+)\s+\$(\w+)\s+:(\w+)\s*$/ ],         // BNE $var $var :label
-        [0x25,  5,  /^\s*SLP\s+\$(\w+)\s*$/ ],
-        [0x26,  5,  /^\s*FIZ\s+\$(\w+)\s*$/ ],
-        [0x27,  5,  /^\s*STZ\s+\$(\w+)\s*$/ ],
+        [0x14,  9,  /^(\s*SET\s+)(@\()(\$\w+)(\)\s+)(\$\w+\s*)$/ ],
+        [0x15, 13,  /^(\s*SET\s+)(@\()(\$\w+)(\s*\+\s*)(\$\w+)(\)\s+)(\$\w+\s*)$/ ],
+        [0x16,  9,  /^(\s*MOD\s+)(@\w+\s+)(\$\w+\s*)$/ ],
+        [0x17,  9,  /^(\s*SHL\s+)(@\w+\s+)(\$\w+\s*)$/ ],
+        [0x18,  9,  /^(\s*SHR\s+)(@\w+\s+)(\$\w+\s*)$/ ],
+        [0x1a,  5,  /^(\s*JMP\s+)(:\w+\s*)$/ ],                             // JMP :label
+        [0x1b,  6,  /^(\s*BZR\s+)(\$\w+\s+)(:\w+\s*)$/ ],                   // BZR $var :label
+        [0x1e,  6,  /^(\s*BNZ\s+)(\$\w+\s+)(:\w+\s*)$/ ],                   // BZR $var :label
+        [0x1f, 10,  /^(\s*BGT\s+)(\$\w+\s+)(\$\w+\s+)(:\w+\s*)$/ ],         // BGT $var $var :label
+        [0x20, 10,  /^(\s*BLT\s+)(\$\w+\s+)(\$\w+\s+)(:\w+\s*)$/ ],         // BLT $var $var :label
+        [0x21, 10,  /^(\s*BGE\s+)(\$\w+\s+)(\$\w+\s+)(:\w+\s*)$/ ],         // BGE $var $var :label
+        [0x22, 10,  /^(\s*BLE\s+)(\$\w+\s+)(\$\w+\s+)(:\w+\s*)$/ ],         // BLE $var $var :label
+        [0x23, 10,  /^(\s*BEQ\s+)(\$\w+\s+)(\$\w+\s+)(:\w+\s*)$/ ],         // BEQ $var $var :label
+        [0x24, 10,  /^(\s*BNE\s+)(\$\w+\s+)(\$\w+\s+)(:\w+\s*)$/ ],         // BNE $var $var :label
+        [0x25,  5,  /^(\s*SLP\s+)(\$\w+\s*)$/ ],
+        [0x26,  5,  /^(\s*FIZ\s+)(\$\w+\s*)$/ ],
+        [0x27,  5,  /^(\s*STZ\s+)(\$\w+\s*)$/ ],
         [0x28,  1,  /^\s*FIN\s*$/ ],
         [0x29,  1,  /^\s*STP\s*$/ ],
-        [0x2b,  5,  /^\s*(ERR)\s+:(\w+)\s*$/ ],                             // ERR :label
+        [0x2b,  5,  /^(\s*ERR\s+)(:\w+\s*)$/ ],                             // ERR :label
         [0x30,  1,  /^\s*PCS\s*$/ ],
-        [0x32,  3,  /^\s*(FUN)\s+(\w+)\s*$/ ],
-        [0x33,  7,  /^\s*(FUN)\s+(\w+)\s+\$(\w+)\s*$/ ],
-        [0x34, 11,  /^\s*(FUN)\s+(\w+)\s+\$(\w+)\s+\$(\w+)\s*$/ ],
-        [0x35,  7,  /^\s*(FUN)\s+@(\w+)\s+(\w+)\s*$/ ],
+        [0x32,  3,  /^(\s*FUN\s+)(\w+\s*)$/ ],
+        [0x33,  7,  /^(\s*FUN\s+)(\w+\s+)(\$\w+\s*)$/ ],
+        [0x34, 11,  /^(\s*FUN\s+)(\w+\s+)(\$\w+\s+)(\$(\w+)\s*)$/ ],
+        [0x35,  7,  /^(\s*FUN\s+)(@\w+\s+)(\w+\s*)$/ ],
         [0x36, 11,  /^\s*(FUN)\s+@(\w+)\s+(\w+)\s+\$(\w+)\s*$/ ],
-        [0x37, 15,  /^\s*(FUN)\s+@(\w+)\s+(\w+)\s+\$(\w+)\s+\$(\w+)\s*$/ ],
+        [0x37, 15,  /^(\s*FUN\s+)(@\w+\s+)(\w+\s+)(\$\w+\s+)(\$\w+\s*)$/ ],
         [0x7f,  1,  /^\s*NOP\s*$/ ]
         ];
     
@@ -145,18 +145,9 @@ function asm_highlight(txt) {
         [ 0x0406, "add_Minutes_to_Timestamp" ]
         ];
 
-    //Choose your colors
-    var asmCommentColor = "green";
-    var asmLabelColor = "Sienna";
-    var asmInstructionColor = "mediumblue";
-    var asmPropertyColor = "purple";
-    var asmNumberColor = "red";
-    var asmErrorColor = "pink";
-
     return asmHighLight(txt);
 
     function asmHighLight(txt, addpre) {
-        var tmp_string;
         var iFound, fFound; //instruction Found, function Found
         var i, j, k;  //iterators
         var parts;  // to store string splitted
@@ -168,7 +159,7 @@ function asm_highlight(txt) {
         for (i=0; i<line.length; i++) {
             iFound = 0;
             if (addpre !== false)
-                ret+="<div id='codeline"+i+"' class='line'>"
+                ret+="<div id='codeline"+i+"' class='line' ondblclick='clickBreakpoint()'>"
             //loop thru all regex expressions
             for (j=0; j<allowedCodes.length; j++) {
                 //we have a matching regex expression
@@ -180,34 +171,28 @@ function asm_highlight(txt) {
                         ret += line[i];
                         break;
                         case 0xf1: //is label line
-                            tmp_string = addSpanColor(line[i],parts[1],asmLabelColor);
-                            tmp_string = addSpanColorLast(tmp_string,":",asmPropertyColor);
-                            ret += tmp_string;
+                            ret+=toSpanClass(parts[0],"asmLabel")
                             break;
                         case 0xf2: //comment
-                            tmp_string = addSpanColor(line[i],parts[1],asmPropertyColor);
-                            tmp_string = addSpanColorLast(tmp_string,parts[2],asmCommentColor);
-                            ret += tmp_string;
+                            ret += toSpanClass(parts[1],"asmDirective")
+                                +toSpanClass(parts[2],"asmComment")
                             break;
                         case 0xf3: //declare
-                            tmp_string = addSpanColor(line[i],parts[1],asmPropertyColor);
-                            ret += tmp_string;
+                            ret += toSpanClass(parts[1],"asmDirective")
+                                +toSpanClass(parts[2],"asmVariable")
                             break;
                         case 0xf4: //const
-                            tmp_string = addSpanColor(parts[1],parts[1],asmPropertyColor);
-                            ret += tmp_string + " " + asmHighLight(parts[2], false).trim();
+                            ret += toSpanClass(parts[1],"asmDirective")
+                                + asmHighLight(parts[2], false).trim();
                             break;
                         case 0xf5: //program
-                            tmp_string = addSpanColor(line[i],parts[1],asmPropertyColor);
-                            tmp_string = addSpanColor(tmp_string,parts[3],asmCommentColor);
-                            ret += tmp_string;
+                            ret += toSpanClass(parts[1],"asmDirective")
+                                +parts[2]
                             break;
                         case 0x01:
-                            tmp_string = addSpanColor(line[i],parts[1],asmInstructionColor);
-                            tmp_string = addSpanColor(tmp_string,"@",asmPropertyColor);
-                            tmp_string = addSpanColor(tmp_string,"#",asmPropertyColor);
-                            tmp_string = addSpanColor(tmp_string,parts[3],asmNumberColor);
-                            ret += tmp_string;
+                            ret +=   toSpanClass(parts[1],"asmInstruction")
+                                    +toSpanVariable(parts[2])
+                                    +toSpanNumber(parts[3])
                             break;
                         case 0x02:
                         case 0x06:
@@ -220,69 +205,72 @@ function asm_highlight(txt) {
                         case 0x16:
                         case 0x17:
                         case 0x18:
-                            tmp_string = addSpanColorRegex(line[i],/\b\w{3}\b/,asmInstructionColor);
-                            tmp_string = addSpanColor(tmp_string,"@",asmPropertyColor);
-                            tmp_string = addSpanColor(tmp_string,"$",asmPropertyColor);
-                            ret += tmp_string;
+                            ret +=   toSpanClass(parts[1],"asmInstruction")
+                                    +toSpanVariable(parts[2])
+                                    +toSpanVariable(parts[3])
                             break;
                         case 0x03:
                         case 0x04:
                         case 0x05:
                         case 0x0d:
-                        case 0x11:
-                            tmp_string = addSpanColorRegex(line[i],/\b\w{3}\b/,asmInstructionColor);
-                            tmp_string = addSpanColor(tmp_string,"@",asmPropertyColor);
-                            ret += tmp_string;
-                            break;
                         case 0x10:
+                        case 0x11:
                         case 0x25:
                         case 0x26:
                         case 0x27:
-                            tmp_string = addSpanColorRegex(line[i],/\b\w{3}\b/,asmInstructionColor);
-                            tmp_string = addSpanColor(tmp_string,"$",asmPropertyColor);
-                            ret += tmp_string;
+                            ret +=   toSpanClass(parts[1],"asmInstruction")
+                                    +toSpanVariable(parts[2])
                             break;
                         case 0x13:
                         case 0x28:
                         case 0x29:
                         case 0x30:
                         case 0x7f:
-                            tmp_string = addSpanColorRegex(line[i],/\b\w{3}\b/,asmInstructionColor);
-                            ret += tmp_string;
+                            ret += toSpanClass(parts[0],"asmInstruction")
                             break;
                         case 0x0e:
+                            ret += toSpanClass(parts[1],"asmInstruction")
+                                +toSpanVariable(parts[2])
+                                +parts[3]
+                                +toSpanVariable(parts[4])
+                                +parts[5]
+                            break;
                         case 0x0f:
-                            tmp_string = addSpanColorRegex(line[i],/\b\w{3}\b/,asmInstructionColor);
-                            tmp_string = addSpanColor(tmp_string,"@",asmPropertyColor);
-                            tmp_string = addSpanColor(tmp_string,"$($",asmPropertyColor);
-                            tmp_string = addSpanColorRegex(tmp_string,/\+\s*\$/,asmPropertyColor);
-                            tmp_string = addSpanColor(tmp_string,")",asmPropertyColor);
-                            ret += tmp_string;
+                            ret +=   toSpanClass(parts[1],"asmInstruction")
+                                +toSpanVariable(parts[2])
+                                +parts[3]
+                                +toSpanVariable(parts[4])
+                                +parts[5]
+                                +toSpanVariable(parts[6])
+                                +parts[7]
                             break;
                         case 0x14:
+                            ret += toSpanClass(parts[1],"asmInstruction")
+                                +parts[2]
+                                +toSpanVariable(parts[3])
+                                +parts[4]
+                                +toSpanVariable(parts[5])
+                            break;
                         case 0x15:
-                            tmp_string = addSpanColorRegex(line[i],/\b\w{3}\b/,asmInstructionColor);
-                            tmp_string = addSpanColor(tmp_string,"@($",asmPropertyColor);
-                            tmp_string = addSpanColorRegex(tmp_string,/\+\s*\$/,asmPropertyColor);
-                            tmp_string = addSpanColor(tmp_string,")",asmPropertyColor);
-                            tmp_string = addSpanColorLast(tmp_string,"$",asmPropertyColor);
-                            ret += tmp_string;
+                            ret += toSpanClass(parts[1],"asmInstruction")
+                                +parts[2]
+                                +toSpanVariable(parts[3])
+                                +parts[4]
+                                +toSpanVariable(parts[5])
+                                +parts[6]
+                                +toSpanVariable(parts[7])
                             break;
                         case 0x12:
                         case 0x1a:
                         case 0x2b:
-                            tmp_string = addSpanColor(line[i],":",asmPropertyColor);
-                            tmp_string = addSpanColor(tmp_string,parts[1],asmInstructionColor);
-                            tmp_string = addSpanColor(tmp_string,parts[2],asmLabelColor);
-                            ret += tmp_string;
+                            ret += toSpanClass(parts[1],"asmInstruction")
+                                +toSpanLabel(parts[2])
                             break;
                         case 0x1b:
                         case 0x1e:
-                            tmp_string = addSpanColor(line[i],":",asmPropertyColor);
-                            tmp_string = addSpanColor(tmp_string,"$",asmPropertyColor);
-                            tmp_string = addSpanColor(tmp_string,parts[1],asmInstructionColor);
-                            tmp_string = addSpanColor(tmp_string,parts[3],asmLabelColor);
-                            ret += tmp_string;
+                            ret +=  toSpanClass(parts[1],"asmInstruction")
+                                   +toSpanVariable(parts[2])
+                                   +toSpanLabel(parts[3])
                             break;
                         case 0x1f:
                         case 0x20:
@@ -290,130 +278,120 @@ function asm_highlight(txt) {
                         case 0x22:
                         case 0x23:
                         case 0x24:
-                            tmp_string = addSpanColor(line[i],":",asmPropertyColor);
-                            tmp_string = addSpanColor(tmp_string,parts[1],asmInstructionColor);
-                            tmp_string = addSpanColor(tmp_string,"$",asmPropertyColor);
-                            tmp_string = addSpanColor(tmp_string,parts[4],asmLabelColor);
-                            ret += tmp_string;
+                            ret +=  toSpanClass(parts[1],"asmInstruction")
+                                +toSpanVariable(parts[2])
+                                +toSpanVariable(parts[3])
+                                +toSpanLabel(parts[4])
                             break;
                         case 0x32:
-                            tmp_string = addSpanColor(line[i],parts[1],asmInstructionColor);
                             for (var k=0, fFound = 0; k<allowedFunctions.length; k++) {
-                                if (parts[2] == (allowedFunctions[k][fnNameIDX])) {
+                                if (parts[2].trim() == (allowedFunctions[k][fnNameIDX])) {
                                     fFound = 1;
                                     break;
                                 }
                             }
                             if (fFound == 0)
-                                tmp_string = addSpanColorError(tmp_string,parts[2],asmErrorColor);
+                                ret +=  toSpanClass(parts[1],"asmInstruction")
+                                    +toSpanClass(parts[2], "asmError")
                             else
-                                tmp_string = addSpanColor(tmp_string,parts[2],asmInstructionColor);
-                            ret += tmp_string
+                                ret +=  toSpanClass(parts[0],"asmInstruction")
                             break;
                         case 0x33:
-                            tmp_string = addSpanColor(line[i],parts[1],asmInstructionColor);
                             for (var k=0, fFound = 0; k<allowedFunctions.length; k++) {
-                                if (parts[2] == (allowedFunctions[k][fnNameIDX])) {
+                                if (parts[2].trim() == (allowedFunctions[k][fnNameIDX])) {
                                     fFound = 1;
                                     break;
                                 }
                             }
                             if (fFound == 0)
-                                tmp_string = addSpanColorError(tmp_string,parts[2],asmErrorColor);
+                                ret +=  toSpanClass(parts[1],"asmInstruction")
+                                    +toSpanClass(parts[2], "asmError")
+                                    +toSpanVariable(parts[3])
                             else
-                                tmp_string = addSpanColor(tmp_string,parts[2],asmInstructionColor);
-                            tmp_string = addSpanColor(tmp_string,"$",asmPropertyColor);
-                            ret += tmp_string;
+                                ret +=  toSpanClass(parts[1]+parts[2],"asmInstruction")
+                                    +toSpanVariable(parts[3])
                             break;
                         case 0x34:
-                            tmp_string = addSpanColor(line[i],parts[1],asmInstructionColor);
                             for (var k=0, fFound = 0; k<allowedFunctions.length; k++) {
-                                if (parts[2] == (allowedFunctions[k][fnNameIDX])) {
+                                if (parts[2].trim() == (allowedFunctions[k][fnNameIDX])) {
                                     fFound = 1;
                                     break;
                                 }
                             }
                             if (fFound == 0)
-                                tmp_string = addSpanColorError(tmp_string,parts[2],asmErrorColor);
+                                ret +=  toSpanClass(parts[1],"asmInstruction")
+                                    +toSpanClass(parts[2], "asmError")
+                                    +toSpanVariable(parts[3])
+                                    +toSpanVariable(parts[4])
                             else
-                                tmp_string = addSpanColor(tmp_string,parts[2],asmInstructionColor);
-                            tmp_string = addSpanColor(tmp_string,"$",asmPropertyColor)
-                            tmp_string = addSpanColorLast(tmp_string,"$",asmPropertyColor)
-                            ret += tmp_string;
+                                ret +=  toSpanClass(parts[1]+parts[2],"asmInstruction")
+                                    +toSpanVariable(parts[3])
+                                    +toSpanVariable(parts[4])
                             break;
                         case 0x35:
-                            tmp_string = addSpanColor(line[i],parts[1],asmInstructionColor);
-                            tmp_string = addSpanColor(tmp_string,"@",asmPropertyColor)
                             for (var k=0, fFound = 0; k<allowedFunctions.length; k++) {
-                                if (parts[3] == (allowedFunctions[k][fnNameIDX])) {
+                                if (parts[3].trim() == (allowedFunctions[k][fnNameIDX])) {
                                     fFound = 1;
                                     break;
                                 }
                             }
                             if (fFound == 0)
-                                tmp_string = addSpanColorError(tmp_string,parts[3],asmErrorColor);
+                                ret +=  toSpanClass(parts[1],"asmInstruction")
+                                    +toSpanVariable(parts[2])
+                                    +toSpanClass(parts[3], "asmError")
                             else
-                                tmp_string = addSpanColor(tmp_string,parts[3],asmInstructionColor);
-                            ret += tmp_string;
+                                ret +=  toSpanClass(parts[1],"asmInstruction")
+                                    +toSpanVariable(parts[2])
+                                    +toSpanClass(parts[3], "asmInstruction")
                             break;
-                            case 0x37:
-                            tmp_string = addSpanColor(line[i],parts[1],asmInstructionColor);
-                            tmp_string = addSpanColor(tmp_string,"@",asmPropertyColor)
+                        case 0x37:
                             for (var k=0, fFound = 0; k<allowedFunctions.length; k++) {
-                                if (parts[3] == (allowedFunctions[k][fnNameIDX])) {
+                                if (parts[3].trim() == (allowedFunctions[k][fnNameIDX])) {
                                     fFound = 1;
                                     break;
                                 }
                             }
                             if (fFound == 0)
-                                tmp_string = addSpanColorError(tmp_string,parts[3],asmErrorColor);
+                                ret +=  toSpanClass(parts[1],"asmInstruction")
+                                    +toSpanVariable(parts[2])
+                                    +toSpanClass(parts[3], "asmInstruction")
+                                    +toSpanVariable(parts[4])
+                                    +toSpanVariable(parts[5])
                             else
-                                tmp_string = addSpanColor(tmp_string,parts[3],asmInstructionColor);
-                            tmp_string = addSpanColor(tmp_string,"$",asmPropertyColor)
-                            tmp_string = addSpanColorLast(tmp_string,"$",asmPropertyColor)
-                            ret += tmp_string;
+                                ret +=  toSpanClass(parts[1],"asmInstruction")
+                                    +toSpanVariable(parts[2])
+                                    +toSpanClass(parts[3], "asmError")
+                                    +toSpanVariable(parts[4])
+                                    +toSpanVariable(parts[5])
                             break;
                             
                         case 0x36:
                         default:
                             //this should never be reached
-                            ret += addErrorColor(line[i]);
+                            ret += toSpanClass(line[i], "asmError");
                     }
                     break;
                 }
             }
             //If nothing found it's an error
             if (iFound == 0)
-                ret += addErrorColor(line[i]);
+                ret += toSpanClass(line[i], "asmError");
             if (addpre !== false)
                 ret += "</div>";
             //ret+="\n"
         }
         return ret;
     }
-
-    function addSpanColor(source, text, color) {
-        return  source.replace(text, "<span style='color:" + color + "'>" + text + "</span>");
+    function toSpanClass(text, classname) {
+        return "<span class='"+classname+"'>"+text+"</span>"
     }
-    function addSpanColorError(source, text, color) {
-        return  source.replace(text, "<span style='background-color:" + color + "'>" + text + "</span>");
+    function toSpanVariable(text) {
+        return '<span class="asmVariable" onmouseover="showInspector(\''+text.slice(1)+'\')" onmouseout="showInspector(\''+text.slice(1)+'\')">'+text+'</span>'
     }
-    function addSpanColorLast(source, text, color) {
-        var n = source.lastIndexOf(text);
-        if (n >= 0)
-            return source.slice(0,n) + "<span style='color:" + color + "'>" + text + "</span>" + source.slice(n+text.length);
-        return  source;
+    function toSpanNumber(text) {
+        return '<span class="asmNumber" onmouseover="showInspector(\''+text.slice(1)+'\')" onmouseout="showInspector(\''+text.slice(1)+'\')">'+text+'</span>'
     }
-    function addSpanColorRegex(source, regex, color) {
-        var result=regex.exec(source);
-        if (result === null)
-            return source;
-        return source.replace(result[0], "<span  style='color:" + color + "'>" + result[0] + "</span>");
-    }
-    function addErrorColor(txt) {
-        return "<span style=background-color:" + asmErrorColor + ">" + txt + "</span>";
-    }
-    function spanColorAll(txt, color) {
-        return "<span style=color:" + color + ">" + txt + "</span>";
+    function toSpanLabel(text) {
+        return '<span class="asmLabel" onmouseover="showLabel(\''+text.slice(1)+'\')" onmouseout="showLabel(\''+text.slice(1)+'\')">'+text+'</span>'
     }
 }

@@ -1,38 +1,9 @@
 "use strict";
 
 // Author: Rui Deleterium
-// Project: https://github.com/deleterium/SmartC
+// Project: https://github.com/deleterium/SC-Simulator
 // License: BSD 3-Clause License
 
-
-const utils = {
-    unsigned2signed: function (unsigned) {
-        unsigned %= 18446744073709551616n
-        if (unsigned >= 18446744073709551616n / 2n ) {
-            return -((unsigned * 18446744073709551615n) % 18446744073709551616n)
-        }
-        return unsigned
-    },
-    signed2unsigned: function (signed) {
-        signed %= 18446744073709551616n
-        if (signed < 0 ) {
-            return (signed * 18446744073709551615n) % 18446744073709551616n
-        }
-        return signed
-    },
-    getNextInstructionLine: function (line) {
-        let instr
-        for( ;line <MachineState.sourceCode.length; line++) {
-            instr = MachineState.sourceCode[line]
-            if (    /^\s*$/.exec(instr) !== null
-                 || /^\s*(\w+):\s*$/.exec(instr) !== null
-                 || /^\s*\^.*/.exec(instr) !== null )
-                continue
-            break
-        }
-        return line
-    },
-}
 const cpu_microcode = [
     { name: "blank", stepFee: 0n,   regex:   /^\s*$/,
         execute: function () {
@@ -54,7 +25,6 @@ const cpu_microcode = [
     },
     { name: "declare", stepFee: 0n,   regex:   /^\s*\^declare\s+(\w+)\s*$/,
         execute: function (regexParts) {
-            
             if (MachineState.Memory.find(mem => mem.name == regexParts[1]) === undefined){
                 MachineState.Memory.push( { name:regexParts[1], value: 0n } )
             }
@@ -77,7 +47,10 @@ const cpu_microcode = [
         }
     },
     { name: "program", stepFee: 0n,   regex:   /^\s*\^program\s+(\w+)\s+([\s\S]+)$/,
-        execute: function () {
+        execute: function (regexParts) {
+            if (regexParts[1] == "activationAmount"){
+                MachineState.activationAmount = BigInt(regexParts[2].trim())
+            }
             MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
             return false
         }
@@ -141,10 +114,10 @@ const cpu_microcode = [
         execute: function (regexParts) {
             let variable1 = MachineState.Memory.find(mem => mem.name == regexParts[1])
             if (variable1 === undefined){
-                MachineState.Memory.push( { name:regexParts[1], value: 18446744073709551615n } )
+                MachineState.Memory.push( { name:regexParts[1], value: utils.minus1 } )
             } else {
                 if (variable1.value == 0) {
-                    variable1.value = 18446744073709551615n
+                    variable1.value = utils.minus1
                 } else {
                     variable1.value = variable1.value - 1n
                 }
@@ -166,7 +139,7 @@ const cpu_microcode = [
             if (variable1 === undefined){
                 MachineState.Memory.push( { name:regexParts[1], value: val } )
             } else {
-                variable1.value = (variable1.value + val) % 18446744073709551616n
+                variable1.value = (variable1.value + val) % utils.pow2to64
             }
             MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
             return true
@@ -183,10 +156,10 @@ const cpu_microcode = [
                 val = variable2.value
             }
             if (variable1 === undefined){
-                val = (18446744073709551616n - val) % 18446744073709551616n
+                val = (utils.pow2to64 - val) % utils.pow2to64
                 MachineState.Memory.push( { name:regexParts[1], value: val } )
             } else {
-                variable1.value = (18446744073709551616n + variable1.value - val) % 18446744073709551616n
+                variable1.value = (utils.pow2to64 + variable1.value - val) % utils.pow2to64
             }
             MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
             return true
@@ -205,7 +178,7 @@ const cpu_microcode = [
             if (variable1 === undefined){
                 MachineState.Memory.push( { name:regexParts[1], value: 0n } )
             } else {
-                variable1.value = (variable1.value * val) % 18446744073709551616n
+                variable1.value = (variable1.value * val) % utils.pow2to64
             }
             MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
             return true
@@ -269,10 +242,10 @@ const cpu_microcode = [
         execute: function (regexParts) {
             let variable1 = MachineState.Memory.find(mem => mem.name == regexParts[1])
             if (variable1 === undefined){
-                MachineState.Memory.push( { name:regexParts[1], value: 18446744073709551615n } )
+                MachineState.Memory.push( { name:regexParts[1], value: utils.minus1 } )
             } else {
                 //using xor with 0xFFFFFFFFFFFFFFFF to emulate 64bit operation
-                variable1.value = variable1.value ^ 18446744073709551615n
+                variable1.value = variable1.value ^ utils.minus1
             }
             MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
             return true
@@ -567,9 +540,9 @@ const cpu_microcode = [
             }
 
             if (regexParts[1] == "SHL") {
-                val1 = (val1 << val2) % 18446744073709551616n
+                val1 = (val1 << val2) % utils.pow2to64
             } else {
-                val1 = (val1 >> val2) % 18446744073709551616n
+                val1 = (val1 >> val2) % utils.pow2to64
             }
 
             if (variable1 == undefined)
@@ -612,11 +585,10 @@ const cpu_microcode = [
                 MachineState.exception="Jump destination label '"+regexParts[3]+"' not found"
                 return true
             }
-            destination = utils.getNextInstructionLine(destination)
 
-            if ((regexParts[1]=="BZR" && val == 0) || regexParts[1]=="BNR" && val != 0)
-                MachineState.instructionPointer = destination
-            else    
+            if ((regexParts[1]=="BZR" && val == 0) || regexParts[1]=="BNZ" && val != 0)
+                MachineState.instructionPointer = utils.getNextInstructionLine(destination)
+            else
                 MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
 
             return true
@@ -643,16 +615,15 @@ const cpu_microcode = [
                 MachineState.exception="Jump destination label '"+regexParts[3]+"' not found"
                 return true
             }
-            destination = utils.getNextInstructionLine(destination)
 
-            if (    (regexParts[1]=="BGT" && val1 >  val2)
-                 || (regexParts[1]=="BLT" && val1 <  val2)
-                 || (regexParts[1]=="BGE" && val1 >= val2)
-                 || (regexParts[1]=="BGT" && val1 <= val2)
-                 || (regexParts[1]=="BEQ" && val1 == val2)
-                 || (regexParts[1]=="BNE" && val1 != val2) )
+            if (    regexParts[1]=="BGT" && val1 >  val2
+                 || regexParts[1]=="BLT" && val1 <  val2
+                 || regexParts[1]=="BGE" && val1 >= val2
+                 || regexParts[1]=="BLE" && val1 <= val2
+                 || regexParts[1]=="BEQ" && val1 == val2
+                 || regexParts[1]=="BNE" && val1 != val2 )
             {
-                MachineState.instructionPointer = destination
+                MachineState.instructionPointer = utils.getNextInstructionLine(destination)
             } else { 
                 MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
             }
@@ -673,6 +644,7 @@ const cpu_microcode = [
             MachineState.running=false
             MachineState.stopped=true
             MachineState.finished=false
+            MachineState.previousBalance = BlockchainState.accounts.find(acc => acc.id == MachineState.contract).balance
             MachineState.sleepUntilBlock= BigInt(BlockchainState.currentBlock) + val1
             MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
             return true
@@ -692,6 +664,7 @@ const cpu_microcode = [
                 MachineState.running=false
                 MachineState.stopped=false
                 MachineState.finished=true
+                MachineState.previousBalance = BlockchainState.accounts.find(acc => acc.id == MachineState.contract).balance
                 MachineState.instructionPointer = MachineState.PCS;
             } else {
                 MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
@@ -713,6 +686,7 @@ const cpu_microcode = [
                 MachineState.running=false
                 MachineState.stopped=true
                 MachineState.finished=false
+                MachineState.previousBalance = BlockchainState.accounts.find(acc => acc.id == MachineState.contract).balance
             }
 
             MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
@@ -725,6 +699,7 @@ const cpu_microcode = [
             MachineState.running=false
             MachineState.stopped=false
             MachineState.finished=true
+            MachineState.previousBalance = BlockchainState.accounts.find(acc => acc.id == MachineState.contract).balance
             MachineState.instructionPointer = MachineState.PCS;
             return true
         }
@@ -735,6 +710,7 @@ const cpu_microcode = [
             MachineState.running=false
             MachineState.stopped=true
             MachineState.finished=false
+            MachineState.previousBalance = BlockchainState.accounts.find(acc => acc.id == MachineState.contract).balance
             MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1);
             return true
         }
@@ -762,43 +738,121 @@ const cpu_microcode = [
     },
     { name: "EXT_FUN", stepFee: 10n,   regex:   /^\s*FUN\s+(\w+)\s*$/, 
         execute: function (regexParts) {
-            MachineState.dead=true
-            MachineState.exception="API Functions not implemented"
+            let apiCode = API_microcode.find(CODE => CODE.op_code == 0x32 && CODE.name == regexParts[1])
+            if (apiCode === undefined) {
+                MachineState.dead=true
+                MachineState.exception="Unknow API Function "+regexParts[2]+"."
+                return true
+            }
+
+            apiCode.execute()
+
+            MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
             return true
         }
     },
     { name: "EXT_FUN_DAT", stepFee: 10n,  regex:   /^\s*FUN\s+(\w+)\s+\$(\w+)\s*$/,
         execute: function (regexParts) {
-            MachineState.dead=true
-            MachineState.exception="API Functions not implemented"
+            let apiCode = API_microcode.find(CODE => CODE.op_code == 0x33 && CODE.name == regexParts[1])
+            if (apiCode === undefined) {
+                MachineState.dead=true
+                MachineState.exception="Unknow API Function "+regexParts[2]+"."
+                return true
+            }
+            let variable1 = MachineState.Memory.find(mem => mem.name == regexParts[2])
+            let val1
+
+            if (variable1 === undefined )
+                val1=0n
+            else
+                val1 = variable1.value
+
+            apiCode.execute(val1)
+
+            MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
             return true
         }
     },
     { name: "EXT_FUN_DAT_2", stepFee: 10n,  regex:   /^\s*FUN\s+(\w+)\s+\$(\w+)\s+\$(\w+)\s*$/,
         execute: function (regexParts) {
-            MachineState.dead=true
-            MachineState.exception="API Functions not implemented"
+            let apiCode = API_microcode.find(CODE => CODE.op_code == 0x34 && CODE.name == regexParts[1])
+            if (apiCode === undefined) {
+                MachineState.dead=true
+                MachineState.exception="Unknow API Function "+regexParts[1]+"."
+                return true
+            }
+            let variable1 = MachineState.Memory.find(mem => mem.name == regexParts[2])
+            let variable2 = MachineState.Memory.find(mem => mem.name == regexParts[3])
+            let val1, val2
+
+            if (variable1 === undefined ) val1=0n
+            else val1 = variable1.value
+            if (variable2 === undefined ) val2=0n
+            else val2 = variable2.value
+
+            apiCode.execute(val1, val2)
+
+            MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
             return true
         }
     },
     { name: "EXT_FUN_RET", stepFee: 10n,     regex:   /^\s*FUN\s+@(\w+)\s+(\w+)\s*$/,
         execute: function (regexParts) {
-            MachineState.dead=true
-            MachineState.exception="API Functions not implemented"
+            let apiCode = API_microcode.find(CODE => CODE.op_code == 0x35 && CODE.name == regexParts[2])
+            if (apiCode === undefined) {
+                MachineState.dead=true
+                MachineState.exception="Unknow API Function "+regexParts[2]+"."
+                return true
+            }
+            let variable1 = MachineState.Memory.find(mem => mem.name == regexParts[1])
+            let val1
+
+            val1 = apiCode.execute()
+
+            if (regexParts[2] == "get_Ticket_Id_for_Tx_in_A" && MachineState.sleepUntilBlock > BlockchainState.currentBlock) {
+                //do no advance instruction pointer. Resume contract in same instruction to get result.
+                return true
+            }
+            if (variable1 === undefined )
+                MachineState.Memory.push( { name:regexParts[1], value:val1 } )
+            else
+                variable1.value = val1
+            MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
             return true
         }
     },
     { name: "EXT_FUN_RET_DAT", stepFee: 10n, regex:   /^\s*FUN\s+@(\w+)\s+(\w+)\s+\$(\w+)\s*$/,
         execute: function (regexParts) {
             MachineState.dead=true
-            MachineState.exception="API Functions not implemented"
+            MachineState.exception="Unknown API Function"
             return true
         }
     },
     { name: "EXT_FUN_RET_DAT_2", stepFee: 10n,  regex:   /^\s*FUN\s+@(\w+)\s+(\w+)\s+\$(\w+)\s+\$(\w+)\s*$/,
         execute: function (regexParts) {
-            MachineState.dead=true
-            MachineState.exception="API Functions not implemented"
+            let apiCode = API_microcode.find(CODE => CODE.op_code == 0x37 && CODE.name == regexParts[2])
+            if (apiCode === undefined) {
+                MachineState.dead=true
+                MachineState.exception="Unknow API Function "+regexParts[2]+"."
+                return true
+            }
+            let variable1 = MachineState.Memory.find(mem => mem.name == regexParts[1])
+            let variable2 = MachineState.Memory.find(mem => mem.name == regexParts[2])
+            let variable3 = MachineState.Memory.find(mem => mem.name == regexParts[3])
+            let val1, val2, val3
+
+            if (variable2 === undefined ) val2=0n
+            else val2 = variable2.value
+            if (variable3 === undefined ) val3=0n
+            else val3 = variable3.value
+
+            val1 = apiCode.execute(val2, val3)
+
+            if (variable1 === undefined )
+                MachineState.Memory.push( { name:regexParts[1], value:val1 } )
+            else
+                variable1.value = val1
+            MachineState.instructionPointer = utils.getNextInstructionLine(MachineState.instructionPointer+1)
             return true
         }
     },
@@ -812,38 +866,35 @@ const cpu_microcode = [
 
 //Process one line of assembly code.
 //  Return true if something was executed
-//  false if it was preprocessor directive
+//  false if line is valid but nothing executed
 //  or null if invalid line
-function cpu() {
-
+function cpu()
+{
     let lastRegexResult = null
+    let currCode, account
 
-    let currCode
-
-    currCode = cpu_microcode.find(instr => (lastRegexResult = instr.regex.exec(MachineState.sourceCode[MachineState.instructionPointer])) != null)
-
-    if (currCode !== undefined)
-    {
-        let account=BlockchainState.accounts.find(obj => obj.id == MachineState.contract)
-        account.balance -= Constants.stepfee * currCode.stepFee
-        if (account.balance < 0) {
-            MachineState.frozen=true
-            account.balance += Constants.stepfee * currCode.stepFee
-            return false   
-        }
-        return currCode.execute(lastRegexResult)
+    currCode = cpu_microcode.find(instr => (lastRegexResult = instr.regex.exec(MachineState.sourceCode[MachineState.instructionPointer])) !== null)
+    if (currCode === undefined) {
+        return null
     }
-    return null
+
+    account = BlockchainState.accounts.find(obj => obj.id == MachineState.contract)
+    account.balance -= Constants.stepfee * currCode.stepFee
+    if (account.balance < 0) {
+        MachineState.frozen=true
+        account.balance += Constants.stepfee * currCode.stepFee
+        MachineState.previousBalance = account.balance
+        return false
+    }
+
+    return currCode.execute(lastRegexResult)
 }
 
 //Loop all lines colecting assembly directives
 //  and put instruction pointer at first instruction
-function cpu_deploy() {
-
-    let lastRegexResult
-
-    let currCode
-
+function cpu_deploy()
+{
+    let lastRegexResult, currCode
     MachineState.sourceCode.forEach(function (line){
         if (/^\s*\^.*/.exec(line) !== null){
             //visit all compiler directives to deploy contract
@@ -852,4 +903,5 @@ function cpu_deploy() {
         }
     })
     MachineState.instructionPointer=utils.getNextInstructionLine(0)
+    MachineState.PCS=MachineState.instructionPointer
 }

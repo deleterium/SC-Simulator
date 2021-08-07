@@ -259,3 +259,33 @@ label:hover                      { background: #ddf; }
 }
 
 .wb-full  { display: none }
+
+#inspectorID {
+    display: none;
+    position: absolute;
+    border: 1px solid black;
+    background: #da7;
+    padding: 0.5em;
+}
+.asmInstruction {
+    color: mediumblue
+}
+.asmVariable {
+    color: purple;
+}
+.asmComment {
+    color: darkgreen;
+}
+.asmDirective {
+    color: brown;
+    font-weight: bold;
+}
+.asmLabel {
+    color: sienna;
+}
+.asmNumber {
+    color: red;
+}
+.asmError {
+    background-color: pink;
+}

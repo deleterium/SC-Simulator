@@ -1,5 +1,9 @@
 'use strict'
 
+// Author: Rui Deleterium
+// Project: https://github.com/deleterium/SC-Simulator
+// License: BSD 3-Clause License
+
 const ContractController = {
 
     run: function (){
@@ -100,39 +104,80 @@ const ContractController = {
         }
 
         // find new incoming tx
-        let incomingTX = BlockchainState.transactions.find(TX => TX.recipient == MachineState.contract && TX.processed === undefined)
+        let incomingTX = BlockchainState.transactions.find(TX => TX.recipient == MachineState.contract
+            && TX.processed === undefined
+            && TX.amount >= MachineState.activationAmount
+            && TX.blockheight < BlockchainState.currentBlock)
         if (incomingTX !== undefined) {
             MachineState.stopped = false
             MachineState.frozen = false
             MachineState.finished = false
             MachineState.running = true
-            MachineState.currentTX = incomingTX
             incomingTX.processed = true
+            return
         }
+        if (MachineState.activationAmount == 0n) {
+            //SmartContracts with zero activation amount never stop
+            MachineState.stopped = false
+            MachineState.frozen = false
+            MachineState.finished = false
+            MachineState.running = true
+        }
+    },
+
+    enqueuedTX: [],
+
+    dispatchEnqueuedTX: function () {
+        ContractController.enqueuedTX.forEach( function (tx){
+            let recaccount = BlockchainState.accounts.find(obj => obj.id == tx.recipient)
+            if (recaccount === undefined) {
+                BlockchainState.accounts.push( { id: tx.recipient, balance: tx.amount })
+            } else {
+                recaccount.balance += tx.amount
+            }
+            BlockchainState.txHeight++
+            tx.sender = MachineState.contract
+            tx.timestamp = (BigInt(BlockchainState.currentBlock) << 32n) + BlockchainState.txHeight
+            tx.txid = utils.getRandom64bit()
+            tx.blockheight = BlockchainState.currentBlock
+            tx.messageHex = utils.messagearray2hexstring(tx.messageArr)
+            tx.messageText = utils.hexstring2string(tx.messageHex)
+
+            BlockchainState.transactions.push(tx)
+        })
+        ContractController.enqueuedTX = []
     },
 }
 
 const BlockchainController = {
     processBlock: function (){
         let txs = UpcomingTransactions.filter(obj => obj.blockheight == BlockchainState.currentBlock)
-        let counter=0n
 
         txs.forEach( curTX => {
             let account = BlockchainState.accounts.find(obj => obj.id == curTX.sender)
-            if (account == undefined) {
+            if (account === undefined) {
                 BlockchainState.accounts.push( { id: curTX.sender, balance: -curTX.amount })
             } else {
                 account.balance -= curTX.amount
             }
 
             account = BlockchainState.accounts.find(obj => obj.id == curTX.recipient)
-            if (account == undefined) {
-                BlockchainState.accounts.push( { id: curTX.sender, balance: curTX.amount })
+            if (account === undefined) {
+                BlockchainState.accounts.push( { id: curTX.recipient, balance: curTX.amount })
             } else {
                 account.balance += curTX.amount
             }
-            counter++
-            curTX.timestamp = (BigInt(curTX.blockheight) << 32n) + counter
+            BlockchainState.txHeight++
+            curTX.timestamp = (BigInt(curTX.blockheight) << 32n) + BlockchainState.txHeight
+            curTX.txid = utils.getRandom64bit()
+            let txhexstring
+            if (curTX.messageText !== undefined) {
+                txhexstring = utils.string2hexstring(curTX.messageText)
+            }
+            if (curTX.messageHex !== undefined) {
+                txhexstring = curTX.messageHex
+            }
+            curTX.messageArr = utils.hexstring2messagearray(txhexstring)
 
             BlockchainState.transactions.push(curTX)
         })

@@ -8,34 +8,36 @@
     <link rel="stylesheet" href="style.css">
     <script src="try.js"></script>
 
+    <script src="src/utils.js"></script>
     <script src="src/cpu.js"></script>
+    <script src="src/api.js"></script>
     <script src="src/controller.js"></script>
+    <script src="src/hashlib.js"></script>
     <script src="src/asm_highlight.js"></script>
 
     <script src="3rd-party/winbox.bundle.js"></script>
-    <script src="3rd-party/highlight.min.js"></script>
 </head>
 
-<body onload='javascript:onLoad()'>
+<body>
     <h1 class="gdrow1 gdcol12 gmrow1">SC Simulator - Assembly simulator and debugger for Signum</h1>
     <fieldset id="source_fieldset" class="gdrow26 gdcol1 gmrow2"><legend id="source_legend">&#10064; Source code:</legend>
         <div id="source_window" class="div_window_source">
             <textarea id="source-code" placeholder="Paste assembly code or load example!" class="inc_height" spellcheck="false" wrap="soft"></textarea>
             <div id="color_code"></div>
+            <div id="inspectorID"></div>
         </div>
     </fieldset>
 
     <fieldset id="actions_fieldset" class="gdrow2 gdcol2 gmrow3"><legend id="actions_legend">&#10064; Actions:</legend>
         <div id="actions_window" class="div_window_grid">
             <button id="step" accesskey="s" title="Alt+Shift+s Advance one instruction" class="btn_class grow1 gcol12"><u>S</u>tep</button><br />
-            <button id="deploy" title="Deploy / reset" class="btn_class grow1 gcol3"><u>D</u>eploy</button>
+            <button id="deploy" title="Deploy / reset" class="btn_class grow2 gcol2"><u>D</u>eploy</button>
             <button id="forge" class="btn_class grow1 gcol4" title="Forge one block">Forge</button>
-            <button id="run" accesskey="r" title="Alt+Shift+r - Run until end (one block)" class="btn_class grow2 gcol1"><u>R</u>un</button>
-            <button id="autostep" accesskey="1" title="Alt+Shift+1 Automatic step instructions" class="btn_class grow2 gcol2"><u>A</u>uto-step</button>
-            <button id="addbp" accesskey="b" class="btn_class grow2 gcol3" title="Alt+Shift+b Add breakpoint">Add BP</button>
+            <button id="run" accesskey="r" title="Alt+Shift+r - Run until end (one block)" class="btn_class grow1 gcol3"><u>R</u>un</button>
+            <button id="autostep" accesskey="1" title="Alt+Shift+1 Automatic step instructions" class="btn_class grow2 gcol1"><u>A</u>uto-step</button>
+            <button id="addbp" accesskey="b" class="btn_class grow2 gcol3" title="Alt+Shift+b Add breakpoint (or double click on line)">Add BP</button>
             <button id="loadExample" accesskey="e" title="Alt+Shift+e Load example" class="btn_class grow2 gcol4"><u>E</u>xample</button>
             <span class="grow3 gcol15">Simulator said: <output id="simsaid">Contract not loaded</output></span>
-
         </div>
     </fieldset>
 
@@ -52,7 +54,23 @@
 
     <fieldset id="transaction_fieldset" class="gdrow5 gdcol2 gmrow6"><legend id="transaction_legend">&#10064; Transaction:</legend>
         <div id="transaction_window" class="div_window_normal">
-            <textarea id="transactions" placeholder="Transactions object here" 	style="width: 100%; height: 200px;" spellcheck="false" wrap="soft"></textarea>
+            <textarea id="transactions" placeholder="Transactions object here" 	style="width: 100%; height: 200px;" spellcheck="false" wrap="soft">[
+  {
+    "sender": "10000n",
+    "recipient": "999n",
+    "amount": "100_0000_0000n",
+    "blockheight": 2,
+    "messageText": "bid const"
+  },
+  {
+    "sender": "0xaaBBn",
+    "recipient": "0x100",
+    "amount": "3000_0000",
+    "blockheight": 2,
+    "messageHex": "636f6e73742061756374696f6e20676f74203173742062696421000000000000"
+  }
+]
+</textarea>
         </div>
     </fieldset>
 </body>

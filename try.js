@@ -1,5 +1,6 @@
 'use strict'
 
+/* Global variable */
 var auto_step_timer=undefined
 var auto_step_running=false
 
@@ -7,6 +8,7 @@ const MachineState = {}
 
 const BlockchainState =  {
     currentBlock: 1,
+    txHeight: 0n,
     accounts: [],
     transactions: [],
 }
@@ -19,14 +21,14 @@ const SimulatorState = {
 const Constants = {
     stepfee: 73500n,  //default value from signum: 73500n
     auto_step_delay: 200, //in ms
-    forge_add_balance: 100000000n, //added balance to contract when forging block
-    deploy_add_balance: 100000000n, //added balance to contract when deploying it
+    deploy_add_balance: 200000000n, //added balance to contract when deploying it
+    activationAmount: 10000000n,   //contract activation amount
     creatorID: 555n,    //Account ID of creator
     contractID: 999n,   //Account ID of contract
     contractDPages: 10, // Number of data pages of deployed contract
     contractUSPages: 1, // Number of user stack pages of deployed contract
     contractCSPages: 1, // Number of code stack pages of deployed contract
-
+    getRandomSleepBlocks: 15, //Sleep blocks during API to get random ticket.
 }
 
 var UpcomingTransactions = {}
@@ -37,14 +39,17 @@ var UpcomingTransactions = {}
         "sender": "10000n",
         "recipient": "999n",
         "amount": "100000000n",
-        "blockheight": "2",
+        "blockheight": 2,
         "messageText": "text message to contract",
         "messageHex": "526166666c6520656e6465642e00000000000000000000000000000000000000"
     }
 ]
 */
 
-function onLoad() {
+
+/* Functions for user interface */
+
+window.onload = function () {
     var scode = document.getElementById("source-code");
 
     scode.addEventListener('keyup',textKeyUp);
@@ -70,10 +75,14 @@ function onLoad() {
     textKeyUp()
 }
 
-function addBreakPoint(){
-
+// Adds manual breakpoint
+function addBreakPoint()
+{
+    if (MachineState.sourceCode===undefined) {
+        inform("Deploy contract before adding a breakpoint..")
+        return
+    }
     var newbp = prompt("Line?")
-
     if ( SimulatorState.breakpoints.find(item => item == newbp) === undefined) {
         SimulatorState.breakpoints.push(newbp)
         let debug= document.getElementById("codeline"+newbp)
@@ -82,17 +91,29 @@ function addBreakPoint(){
     } else {
         SimulatorState.breakpoints = SimulatorState.breakpoints.filter(item => item != newbp)
         document.getElementById("codeline"+newbp).className=
-        document.getElementById("codeline"+newbp).className.replace("breakpoint","")
+            document.getElementById("codeline"+newbp).className.replace("breakpoint","")
     }
 }
 
-function runContract (){
+// Runs block for current block (until end or breakpoint found)
+function runContract ()
+{
+    if (MachineState.sourceCode===undefined) {
+        inform("Deploy contract before running..")
+        return
+    }
     var retCode=ContractController.run()
     inform(retCode)
     updatePage()
 }
 
-function stepContract(){
+// Runs only one instruction
+function stepContract()
+{
+    if (MachineState.sourceCode===undefined) {
+        inform("Deploy contract before stepping..")
+        return
+    }
     var retCode = ContractController.step()
     if (retCode === undefined) {
         inform("Step done.")
@@ -102,18 +123,21 @@ function stepContract(){
     updatePage()
 }
 
-function auto_stepContract(click){
-
+// Runs steps with timeInterval
+function auto_stepContract(click)
+{
+    if (MachineState.sourceCode===undefined) {
+        inform("Deploy contract before auto-stepping..")
+        return
+    }
     if( click !== undefined) {
         auto_step_running = !auto_step_running
     }
-
     if (auto_step_running === false) {
         clearTimeout(auto_step_timer)
         inform("Auto-step interrupted")
         return
     }
-
     var retCode = ContractController.step()
     if (retCode === undefined) {
         auto_step_timer=setTimeout(auto_stepContract, Constants.auto_step_delay)
@@ -125,106 +149,201 @@ function auto_stepContract(click){
     updatePage()
 }
 
-function forgeBlock(){
-
+// Simulate forging one block
+function forgeBlock()
+{
+    if (MachineState.sourceCode===undefined) {
+        inform("Deploy contract before forging a block..")
+        return
+    }
+    try {
+        UpcomingTransactions = JSON.parse(document.getElementById("transactions").value, (key, value) => {
+            if (typeof value === "string") {
+                if (/^[\d_]+n$/.test(value)) {
+                    return BigInt(value.substr(0, value.length - 1).replaceAll("_",""));
+                }
+                if (/^0[xX][\da-fA-F_]+n$/.test(value)) {
+                    return BigInt(value.substr(0, value.length - 1).replaceAll("_",""));
+                }
+                if (key === "blockheight") {
+                    return Number(value);
+                }
+                if (key === "sender" || key === "recipient" || key === "amount") {
+                    return BigInt(value.replaceAll("_",""));
+                }
+            }
+            return value;
+        })
+    } catch (error) {
+        inform("Could not parse transactions JSON text. Atention on ','!!! "+error)
+        return
+    }
     // Verify if ended execution this block
     if (MachineState.frozen === false &&
         MachineState.running === true) {
         inform("End contract execution on this block to continue.")
         return
     }
-
+    ContractController.dispatchEnqueuedTX()
     BlockchainState.currentBlock++
-
-    UpcomingTransactions = JSON.parse(document.getElementById("transactions").value, (key, value) => {
-        if (typeof value === "string" && /^\d+n$/.test(value)) {
-            return BigInt(value.substr(0, value.length - 1));
-        }
-        return value;
-    })
-    //document.getElementById("transactions").value = JSON.stringify(UpcomingTransactions.filter(obj => obj.blockheight != BlockchainState.currentBlock), stringifyReplacer, "    ")
-
+    BlockchainState.txHeight = 0n
     BlockchainController.processBlock()
-
     ContractController.processBlock()
-    inform("New block forged!")
-
+    inform("Block #"+BlockchainState.currentBlock+" forged!")
     updatePage()
 }
 
-function deploy(){
+// Deploy contract and sets all variables to default
+function deploy()
+{
+    let sourceDOM = document.getElementById("source-code")
+    let colorDOM = document.getElementById('color_code')
+    let source = sourceDOM.value
+    if (source.length<=1) {
+        inform("Could not load an empty contract.")
+        return
+    }
     MachineState.instructionPointer= 0
     MachineState.sleepUntilBlock= 0
+    MachineState.previousBalance= 0
     MachineState.frozen= false
     MachineState.running=true
     MachineState.stopped=false
     MachineState.finished=false
     MachineState.dead=false
+    MachineState.activationAmount = Constants.activationAmount
     MachineState.creator= Constants.creatorID
     MachineState.contract= Constants.contractID
     MachineState.DataPages= Constants.contractDPages
     MachineState.UserStackPages= Constants.contractUSPages
     MachineState.CodeStackPages= Constants.contractUSPages
-
     MachineState.Memory= []
     MachineState.UserStack= []
     MachineState.CodeStack= []
-    MachineState.currentTX= {}
+    MachineState.A= [ 0n, 0n, 0n, 0n ]
+    MachineState.B= [ 0n, 0n, 0n, 0n ]
     MachineState.PCS= null
     MachineState.ERR= null
-
     BlockchainState.currentBlock= 1
     BlockchainState.accounts= []
     BlockchainState.transactions= []
-
     BlockchainState.accounts.push( { id: Constants.contractID, balance: Constants.deploy_add_balance} )
-    //    transactions: [],
-
     SimulatorState.breakpoints=[]
-
     if (MachineState.sourceCode !== undefined) {
         MachineState.sourceCode=undefined
-        document.getElementById('color_code').innerHTML=""
-        document.getElementById('color_code').style.display="none"
-        document.getElementById("source-code").style.display="block"
+        colorDOM.innerHTML=""
+        colorDOM.style.display="none"
+        sourceDOM.style.display="block"
         updatePage()
         inform("Contract unloaded")
         return
     }
-    MachineState.sourceCode=document.getElementById("source-code").value.split("\n")
-
-    var source=document.getElementById("source-code")
-    document.getElementById('color_code').innerHTML=asm_highlight(source.value);
-    source.style.display="none"
-    document.getElementById("color_code").style.display="block"
-
+    MachineState.sourceCode=source.split("\n")
+    colorDOM.innerHTML=asm_highlight(source);
+    sourceDOM.style.display="none"
+    colorDOM.style.display="block"
     cpu_deploy()
     updatePage()
     inform("Contract deployed. Ready to run")
 }
 
-function inform(message) {
+// Handles apearing/hiding inspector floating div and update its contents (for variables/numbers)
+function showInspector(asmVar)
+{
+    asmVar = asmVar.trim()
+    var e = window.event
+    let variable = MachineState.Memory.find(mem => mem.name == asmVar)
+    let value
+    if (variable !== undefined) {
+        value = variable.value
+    } else if (/[\da-f]{16}/.exec(asmVar) !== null) {
+        value = BigInt("0x"+asmVar)
+    } else {
+        return
+    }
+    let mydiv = document.getElementById("inspectorID")
+    let content = '<table><tbody><tr><th colspan="2">'+asmVar+'</th></tr>'
+            + '<tr><td>Hex: </td><td>'
+            + "0x"+value.toString(16)
+            + '</td></tr><tr><td>String: </td><td>"'
+            + utils.long2string(value)
+            + '"</td></tr><tr><td>uDec: </td><td>'
+            + value.toString(10)
+            + '</td></tr><tr><td>sDec: </td><td>'
+            + utils.unsigned2signed(value).toString(10)
+            +'</td></tr></tbody></table>'
+    mydiv.innerHTML = content
+    mydiv.style.left = (e.layerX+20)+'px';
+    mydiv.style.top = (e.layerY+20)+'px';
+    if (mydiv.style.display==="block") {
+        mydiv.style.display="none"
+    } else {
+        mydiv.style.display="block"
+    }
+}
+
+// Handles apearing/hiding inspector floating div and update its contents (for labels)
+function showLabel(textLabel)
+{
+    textLabel = textLabel.trim()
+    var e = window.event
+    let custom_regex = new RegExp("^\\s*("+textLabel+"):\\s*$")
+    let destination = MachineState.sourceCode.findIndex( line => custom_regex.exec(line) !== null)
+    if (destination == -1){
+        return
+    }
+    let mydiv = document.getElementById("inspectorID")
+    let content = '<table><tbody><tr><th>'+textLabel+'</th></tr>'
+            +'<tr><td>Line '+destination+'</td></tr>'
+            +'</tbody></table>'
+    mydiv.innerHTML = content
+    mydiv.style.left = (e.layerX+20)+'px';
+    mydiv.style.top = (e.layerY+20)+'px';
+    if (mydiv.style.display==="block") {
+        mydiv.style.display="none"
+    } else {
+        mydiv.style.display="block"
+    }
+}
+
+// Handles click do add/remove breakpoint
+function clickBreakpoint()
+{
+    var e = window.event
+    var newbp = e.currentTarget.id.slice(8)
+    if ( SimulatorState.breakpoints.find(item => item == newbp) === undefined) {
+        SimulatorState.breakpoints.push(newbp)
+        let debug= document.getElementById("codeline"+newbp)
+        debug.className+=" breakpoint"
+    } else {
+        SimulatorState.breakpoints = SimulatorState.breakpoints.filter(item => item != newbp)
+        document.getElementById("codeline"+newbp).className=
+        document.getElementById("codeline"+newbp).className.replace("breakpoint","")
+    }
+}
+
+// Update simulator message
+function inform(message)
+{
     document.getElementById("simsaid").innerText=message
 }
 
-
-function updatePage(){
-
+// Handle showing memory/registers table with all values
+function updatePage()
+{
     function clone(aObject) {
         if (!aObject) {
           return aObject;
         }
-      
         let v;
         let bObject = Array.isArray(aObject) ? [] : {};
         for (const k in aObject) {
           v = aObject[k];
           bObject[k] = (typeof v === "object") ? clone(v) : v;
         }
-      
         return bObject;
     }
-    
+
     let output = ""
     let currVal
 
@@ -252,18 +371,24 @@ function updatePage(){
     output += MachineState.dead.toString() + '</td>'
 
     output += '</tr><tr>'
-    output += '<td colspan="2"  class="taleft">Balance: '+BlockchainState.accounts.find(obj => obj.id == MachineState.contract).balance.toString(10) + '</td>'
-    output += '<td title="Instruction pointer (next line)">IP: '+MachineState.instructionPointer.toString() + '</td>'
+    output += '<td colspan="2"  class="taleft">Balance: '+utils.long2stringBalance(BlockchainState.accounts.find(obj => obj.id == MachineState.contract).balance) + '</td>'
+    if (MachineState.instructionPointer === null)
+        output += '<td title="Instruction pointer (next line)">IP: null</td>'
+    else
+        output += '<td title="Instruction pointer (next line)">IP: '+MachineState.instructionPointer.toString() + '</td>'
     output += '<td> '+'' + '</td>'
     /*output += '<td>: '+'' + '</td>'*/
     output += '<td> '+'' + '</td>'
     output += '</tr></tbody></table>'
 
     // Memory content
-    if (SimulatorState.lastUpdateMemory.length == 0)
+    if (SimulatorState.lastUpdateMemory.length == 0) {
         SimulatorState.lastUpdateMemory = clone(MachineState.Memory)
+        SimulatorState.lastA = clone(MachineState.A)
+        SimulatorState.lastB = clone(MachineState.B)
+    }
     output += '<table class="table-all"><tbody><tr><th>#</th><th class="taleft">Variable</th><th>Hex</th>'+
-              '<th>Unsigned dec</th><th>Signed dec</th></tr>'
+              '<th>String</th><th>Unsigned dec</th><th>Signed dec</th></tr>'
     for (let idx = 0; idx<MachineState.Memory.length; idx++){
         currVal = MachineState.Memory[idx].value
         if (SimulatorState.lastUpdateMemory[idx] !== undefined && currVal == SimulatorState.lastUpdateMemory[idx].value) {
@@ -276,11 +401,53 @@ function updatePage(){
                + '</td><td>'
                + "0x"+currVal.toString(16)
                + '</td><td>'
+               + utils.long2string(currVal)
+               + '</td><td>'
                + currVal.toString(10)
                + '</td><td>'
                + utils.unsigned2signed(currVal).toString(10)
                +'</td></tr>'
 
+    }
+    // A register
+    for (let idx = 0; idx<4; idx++){
+        currVal = MachineState.A[idx]
+        if (SimulatorState.lastA !== undefined && currVal == SimulatorState.lastA[idx]) {
+            output +='<tr><td>'
+        } else {
+            output +='<tr class="updatedVal"><td>'
+        }
+        output += '</td><td class="taleft">'
+               + "<strong>A"+(idx+1)+"</strong>"
+               + '</td><td>'
+               + "0x"+currVal.toString(16)
+               + '</td><td>'
+               + utils.long2string(currVal)
+               + '</td><td>'
+               + currVal.toString(10)
+               + '</td><td>'
+               + utils.unsigned2signed(currVal).toString(10)
+               +'</td></tr>'
+    }
+    // B register
+    for (let idx = 0; idx<4; idx++){
+        currVal = MachineState.B[idx]
+        if (SimulatorState.lastB !== undefined && currVal == SimulatorState.lastB[idx]) {
+            output +='<tr><td>'
+        } else {
+            output +='<tr class="updatedVal"><td>'
+        }
+        output += '</td><td class="taleft">'
+               + "<strong>B"+(idx+1)+"</strong>"
+               + '</td><td>'
+               + "0x"+currVal.toString(16)
+               + '</td><td>'
+               + utils.long2string(currVal)
+               + '</td><td>'
+               + currVal.toString(10)
+               + '</td><td>'
+               + utils.unsigned2signed(currVal).toString(10)
+               +'</td></tr>'
     }
     output += '</tbody></table>'
 
@@ -305,20 +472,23 @@ function updatePage(){
 
     // Save last memory state
     SimulatorState.lastUpdateMemory = clone(MachineState.Memory)
+    SimulatorState.lastA = clone(MachineState.A)
+    SimulatorState.lastB = clone(MachineState.B)
+
 }
 
-function textKeyUp () {
+// grows text area
+function textKeyUp ()
+{
     var elem = document.getElementById("source-code");
     var text = elem.value;
-
-     // grows text area
     var newrow = (text.match(/\n/g) || '').length + 5;
-
     elem.rows = newrow;
  }
 
-
-function stringifyReplacer(key, value) {
+// Handles showing objects for MachineState object
+function stringifyReplacer(key, value)
+{
     if (   key == "Memory"
         || key == "sourceCode"
         || key == "frozen"
@@ -326,8 +496,13 @@ function stringifyReplacer(key, value) {
         || key == "stopped"
         || key == "finished"
         || key == "dead"
+        || key == "A"
+        || key == "B"
         || key == "instructionPointer" ) {
         return
+    }
+    if (key === "balance" || key === "amount") {
+        return utils.long2stringBalance(value) + 'n';
     }
     if (typeof value === 'bigint') {
         return value.toString(10) + 'n';
@@ -338,12 +513,11 @@ function stringifyReplacer(key, value) {
     }
 }
 
-
 // functions for windows control
 function detachSource(){
     new WinBox("Source code", {
-        height: "100%",
-        top: 50,
+        height: "50%",
+        x: "0%",
         mount: document.getElementById("source_window"),
         onclose: function () {
             document.getElementById("source_fieldset").style.display="block";
@@ -351,42 +525,39 @@ function detachSource(){
     });
     document.getElementById("source_fieldset").style.display="none";
 }
-
 function detachMemory(){
     new WinBox("Memory", {
         mount: document.getElementById("memory_window"),
-        height: "25%",
+        height: "50%",
         width: "50%",
         x: "50%",
-        y: "75%",
-        top: 50,
+        y: "25%",
         onclose: function () {
             document.getElementById("memory_fieldset").style.display="block";
         }
     });
     document.getElementById("memory_fieldset").style.display="none";
 }
-
 function detachActions(){
     new WinBox("Actions", {
         mount: document.getElementById("actions_window"),
-        height: "20%",
+        height: "25%",
         width: "50%",
         x: "50%",
-        y: "55%",
-        top: 50,
+        y: "0%",
         onclose: function () {
             document.getElementById("actions_fieldset").style.display="block";
         }
     });
     document.getElementById("actions_fieldset").style.display="none";
 }
-
 function detachTransaction(){
     var ret = new WinBox("Transactions", {
         mount: document.getElementById("transaction_window"),
-        top: 50,
-        height: "95%",
+        height: "25%",
+        width: "50%",
+        x: "50%",
+        y: "75%",
         onclose: function () {
             document.getElementById("transaction_fieldset").style.display="block";
         }
@@ -394,15 +565,13 @@ function detachTransaction(){
     document.getElementById("transaction_fieldset").style.display="none";
     return ret;
 }
-
 function detachBlockchain(){
     new WinBox("Blockchain", {
         mount: document.getElementById("blockchain_window"),
         height: "50%",
         width: "50%",
-        x: "50%",
-        y: "50",
-        top: 50,
+        x: "0%",
+        y: "50%",
         onclose: function () {
             document.getElementById("blockchain_fieldset").style.display="block";
         }
@@ -410,19 +579,14 @@ function detachBlockchain(){
     document.getElementById("blockchain_fieldset").style.display="none";
 }
 
-function detachHelp(){
-    var helpage = new WinBox("Help page", {
-        url: "https://deleterium.github.io/SmartC/docs/",
-        height: "70%",
-        width: "70%",
-        x: "center",
-        y: "center",
-        top: 50,
-   });
-   helpage.focus();
-}
-
+// Function to load a simple example
 function loadExample() {
+
+    if (MachineState.sourceCode!==undefined) {
+        inform("Can not load example if contract is deployed...")
+        return
+    }
+
     document.getElementById("source-code").value = "\
 ^declare r0\n\
 ^declare r1\n\
