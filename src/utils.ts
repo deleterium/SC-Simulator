@@ -1,68 +1,56 @@
-"use strict"
-
 // Author: Rui Deleterium
 // Project: https://github.com/deleterium/SC-Simulator
 // License: BSD 3-Clause License
 
-const utils = {
-    unsigned2signed: function (unsigned) {
+
+export class utils {
+
+    static unsigned2signed(unsigned: bigint): bigint {
         unsigned %= 1n << 64n
         if (unsigned >= (1n << 63n) ) {
             return unsigned - (1n << 64n)
         }
         return unsigned
-    },
-    signed2unsigned: function (signed) {
+    }
+    static signed2unsigned(signed: bigint): bigint {
         signed %= 18446744073709551616n
         if (signed < 0 ) {
             return signed + 18446744073709551616n
         }
         return signed
-    },
-    getNextInstructionLine: function (line) {
-        let instr
-        for( ;line <MachineState.sourceCode.length; line++) {
-            instr = MachineState.sourceCode[line]
-            if (    /^\s*$/.exec(instr) !== null
-                 || /^\s*(\w+):\s*$/.exec(instr) !== null
-                 || /^\s*\^.*/.exec(instr) !== null )
-                continue
-            break
-        }
-        return line
-    },
-    getRandom64bit: function () {
+    }
+    static getRandom64bit(): bigint {
         return (BigInt(Math.floor(Math.random()*4294967296))<<32n)+BigInt(Math.floor(Math.random()*4294967296))
-    },
-    hexstring2messagearray: function (in_hexstr) {
+    }
+    static hexstring2messagearray(in_hexstr: string): bigint[] {
         in_hexstr = in_hexstr.padEnd(64,"0")
         let ret = [ 0n, 0n, 0n, 0n ]
-        let base, debug
-        for (let i=0; i<64; i+=2) {
-            if (i % 16 == 0) base = 1n
+        let base=1n
+        for (let i=0n; i<64n; i+=2n) {
+            if (i % 16n == 0n) base = 1n
             else base *= 256n
-            ret[parseInt(i/16,10)] += BigInt(parseInt(in_hexstr.slice(i, i+2),16)) * base
+            ret[Number(i/16n)] += BigInt(Number("0x"+in_hexstr.slice(Number(i), Number(i+2n)))) * base
         }
         return ret
-    },
-    messagearray2hexstring: function (in_array) {
+    }
+    static messagearray2hexstring(in_array: bigint[]): string {
         let ret = "", val
         for (let i = 0n; i < 32n; i++) {
-            val = (in_array[i/8n] >> ((i % 8n) * 8n)) & 0xffn
+            val = (in_array[Number(i/8n)] >> ((i % 8n) * 8n)) & 0xffn
             ret += val.toString(16).padStart(2,"0")
         }
         return ret
-    },
-    messagearray2superregister: function (in_array) {
+    }
+    static messagearray2superregister(in_array: bigint[]): bigint {
         let ret = 0n
         for (let i = 0, base = 1n; i < 4; i++) {
             ret += in_array[i] * base
             base <<= 64n
         }
         return ret
-    },
-    superregister2messagearray: function (in_superregister) {
-        let ret = []
+    }
+    static superregister2messagearray(in_superregister: bigint): [bigint, bigint, bigint, bigint ] {
+        let ret: [bigint, bigint, bigint, bigint ] = [ 0n, 0n, 0n, 0n]
         if (in_superregister < 0n) {
             in_superregister += (1n << 256n)
         }
@@ -71,18 +59,18 @@ const utils = {
             in_superregister >>= 64n
         }
         return ret
-    },
-    long2string: function (in_long) {
+    }
+    static long2string(in_long: bigint): string {
         let hexstr = "", val
         for (let i = 0n; i < 8n; i++) {
             val = (in_long >> (i%8n)*8n) & 0xffn
             hexstr += val.toString(16).padStart(2,"0")
         }
         return this.hexstring2string(hexstr)
-    },
-    long2stringBalance: function (bigintVar) {
+    }
+    static long2stringBalance(bigintVar: bigint) {
         var digits = bigintVar.toString(10).split("").reverse()
-        let outp=[]
+        let outp :string[] = []
         let diglen = digits.length
         if (bigintVar < 0) diglen--
         if (diglen > 4) {
@@ -99,11 +87,8 @@ const utils = {
             outp=outp.concat(digits.slice(0))
         }
         return outp.reverse().join("")
-    },
-    string2hexstring: function (in_str) {
-        if ( !(typeof in_str === 'string' || in_str instanceof String) ){
-            return undefined;
-        }
+    }
+    static string2hexstring(in_str: string) {
         var byarr = [];
         var ret = "";
         var c,c1, i, j;
@@ -138,8 +123,8 @@ const utils = {
             ret+=byarr[j].toString(16).padStart(2, '0');
         }
         return(ret.padEnd(64,"0"));
-    },
-    hexstring2string: function(in_hexstr) {
+    }
+    static hexstring2string(in_hexstr: string) {
         let c1, c2, c3, c4, cc
         let i=0, ret = ""
         do {
@@ -196,7 +181,5 @@ const utils = {
                 continue
             }
         } while (true)
-    },
-    minus1: 18446744073709551615n,
-    pow2to64: 18446744073709551616n,
+    }
 }

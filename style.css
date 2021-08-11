@@ -213,12 +213,14 @@ label:hover                      { background: #ddf; }
 /*Grid for buttons */
 .grow1 { grid-row-start: 1; }
 .grow2 { grid-row-start: 2; }
+.grow3 { grid-row-start: 3; }
 .gcol1 { grid-column-start: 1; }
 .gcol2 { grid-column-start: 2; }
 .gcol3 { grid-column-start: 3; }
 .gcol4 { grid-column-start: 4; }
 .gcol12 { grid-column-start: 1; grid-column-end: 3;}
 .gcol15 { grid-column-start: 1; grid-column-end: 5;}
+.gcol25 { grid-column-start: 2; grid-column-end: 5;}
 
 .div_window_source {
 	padding: 0px;

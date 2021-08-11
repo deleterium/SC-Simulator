@@ -13,100 +13,97 @@
  * See http://pajhome.org.uk/crypt/md5 for more info.
  */
 
-class HashLib {
-    #uLongsArr // Contains an array of 64-bit unsigned BigInt
-    #sWordsArr // Contains an array of 32-bit signed Number
+export class HashLib {
+    private uLongsArr: bigint[] = [] // Contains an array of 64-bit unsigned BigInt
+    private sWordsArr: number[] = [] // Contains an array of 32-bit signed Number
 
-    constructor(hashType) {
-        if (hashType === "MD5" || hashType === "RIPEMD160" || hashType === "SHA256" ) {
-            this.hashType = hashType;
-        }
+    constructor(public hashType: "MD5" | "RIPEMD160" | "SHA256") {
     }
 
-    hash(arr) {
-        this.#uLongsArr=arr
+    hash(arr: bigint[]): bigint[] {
+        this.uLongsArr=arr
         if (this.hashType === "MD5") {
-            return this.#hashMD5()
+            return this.hashMD5()
         }
         if (this.hashType === "RIPEMD160") {
-            return this.#hashRIPEMD160()
+            return this.hashRIPEMD160()
         }
         if (this.hashType === "SHA256") {
-            return this.#hashSHA256()
+            return this.hashSHA256()
         }
-        return undefined
+        return [ 0n ]
     }
 
-    #hashMD5() {
-        this.#uLongsArr2sWordsArr()
+    private hashMD5() {
+        this.uLongsArr2sWordsArr()
 
-        this.#sWordsArr = this.#binl_md5(this.#sWordsArr, 4 * 8 * this.#sWordsArr.length)
+        this.sWordsArr = this.binl_md5(this.sWordsArr, 4 * 8 * this.sWordsArr.length)
 
-        let aa= this.#signed2unsigned(BigInt(this.#sWordsArr[0]))
-        let bb= this.#signed2unsigned(BigInt(this.#sWordsArr[1]))
-        let cc= this.#signed2unsigned(BigInt(this.#sWordsArr[2]))
-        let dd= this.#signed2unsigned(BigInt(this.#sWordsArr[3]))
+        let aa= this.signed2unsigned(BigInt(this.sWordsArr[0]))
+        let bb= this.signed2unsigned(BigInt(this.sWordsArr[1]))
+        let cc= this.signed2unsigned(BigInt(this.sWordsArr[2]))
+        let dd= this.signed2unsigned(BigInt(this.sWordsArr[3]))
 
         return [(bb << 32n) + aa, (dd << 32n) + cc]
     }
 
-    #hashRIPEMD160() {
-        this.#uLongsArr2sWordsArr()
+    private hashRIPEMD160() {
+        this.uLongsArr2sWordsArr()
 
-        this.#sWordsArr = this.#binl_rmd160(this.#sWordsArr, 4 * 8 * this.#sWordsArr.length)
+        this.sWordsArr = this.binl_rmd160(this.sWordsArr, 4 * 8 * this.sWordsArr.length)
 
-        let aa= this.#signed2unsigned(BigInt(this.#sWordsArr[0]))
-        let bb= this.#signed2unsigned(BigInt(this.#sWordsArr[1]))
-        let cc= this.#signed2unsigned(BigInt(this.#sWordsArr[2]))
-        let dd= this.#signed2unsigned(BigInt(this.#sWordsArr[3]))
-        let ee= this.#signed2unsigned(BigInt(this.#sWordsArr[4]))
+        let aa= this.signed2unsigned(BigInt(this.sWordsArr[0]))
+        let bb= this.signed2unsigned(BigInt(this.sWordsArr[1]))
+        let cc= this.signed2unsigned(BigInt(this.sWordsArr[2]))
+        let dd= this.signed2unsigned(BigInt(this.sWordsArr[3]))
+        let ee= this.signed2unsigned(BigInt(this.sWordsArr[4]))
 
         return [(bb << 32n) + aa, (dd << 32n) + cc, ee]
     }
 
-    #hashSHA256() {
-        this.#uLongsArr2sWordsArr()
+    private hashSHA256() {
+        this.uLongsArr2sWordsArr()
 
-        this.#sWordsArrToggleEndian()
-        this.#sWordsArr = this.#binb_sha256(this.#sWordsArr, 4 * 8 * this.#sWordsArr.length)
-        this.#sWordsArrToggleEndian()
+        this.sWordsArrToggleEndian()
+        this.sWordsArr = this.binb_sha256(this.sWordsArr, 4 * 8 * this.sWordsArr.length)
+        this.sWordsArrToggleEndian()
 
-        let aa= this.#signed2unsigned(BigInt(this.#sWordsArr[0]))
-        let bb= this.#signed2unsigned(BigInt(this.#sWordsArr[1]))
-        let cc= this.#signed2unsigned(BigInt(this.#sWordsArr[2]))
-        let dd= this.#signed2unsigned(BigInt(this.#sWordsArr[3]))
-        let ee= this.#signed2unsigned(BigInt(this.#sWordsArr[4]))
-        let ff= this.#signed2unsigned(BigInt(this.#sWordsArr[5]))
-        let gg= this.#signed2unsigned(BigInt(this.#sWordsArr[6]))
-        let hh= this.#signed2unsigned(BigInt(this.#sWordsArr[7]))
+        let aa= this.signed2unsigned(BigInt(this.sWordsArr[0]))
+        let bb= this.signed2unsigned(BigInt(this.sWordsArr[1]))
+        let cc= this.signed2unsigned(BigInt(this.sWordsArr[2]))
+        let dd= this.signed2unsigned(BigInt(this.sWordsArr[3]))
+        let ee= this.signed2unsigned(BigInt(this.sWordsArr[4]))
+        let ff= this.signed2unsigned(BigInt(this.sWordsArr[5]))
+        let gg= this.signed2unsigned(BigInt(this.sWordsArr[6]))
+        let hh= this.signed2unsigned(BigInt(this.sWordsArr[7]))
 
         return [(bb << 32n) + aa, (dd << 32n) + cc, (ff << 32n) + ee, (hh << 32n) + gg]
     }
 
-    #sWordsArrToggleEndian() {
-        let bi = this.#sWordsArr.map(x => this.#signed2unsigned(BigInt(x)))
+    private sWordsArrToggleEndian() {
+        let bi = this.sWordsArr.map(x => this.signed2unsigned(BigInt(x)))
         let worarr = [], val
-        for (let i = 0n; i < bi.length; i++) {
+        for (let i = 0; i < bi.length; i++) {
             val  =  (bi[i] >> 24n) & 0xffn
             val |= ((bi[i] >> 16n) & 0xffn) << 8n
             val |= ((bi[i] >>  8n) & 0xffn) << 16n
             val |=  (bi[i]         & 0xffn) << 24n
-            worarr.push( Number( this.#unsigned2signed( val ) ) )
+            worarr.push( Number( this.unsigned2signed( val ) ) )
         }
-        this.#sWordsArr=worarr
+        this.sWordsArr=worarr
     }
 
-    #uLongsArr2sWordsArr() {
+    private uLongsArr2sWordsArr() {
         let worarr = [], val
-        for (let i = 0n; i < this.#uLongsArr.length * 2; i++) {
-            val = (this.#uLongsArr[i/2n] >> ( (i%2n) * 32n)) & 0xffffffffn
-            worarr.push( Number( this.#unsigned2signed( val ) ) )
+        for (let i = 0n; i < this.uLongsArr.length * 2; i++) {
+            val = (this.uLongsArr[ Number(i/2n) ] >> ( (i%2n) * 32n)) & 0xffffffffn
+            worarr.push( Number( this.unsigned2signed( val ) ) )
         }
-        this.#sWordsArr=worarr
+        this.sWordsArr=worarr
     }
 
     // For 32-bit BigInt
-    #unsigned2signed(unsigned) {
+    private unsigned2signed(unsigned: bigint) {
         if (unsigned >= 0x80000000n ) {
             return unsigned - 0x100000000n
         }
@@ -114,7 +111,7 @@ class HashLib {
     }
 
     // For 32-bit BigInt
-    #signed2unsigned(signed) {
+    private signed2unsigned(signed: bigint) {
         if (signed < 0n ) {
             return (signed + 0x100000000n)
         }
@@ -122,32 +119,32 @@ class HashLib {
     }
 
     /* Calculate the MD5 of an array of little-endian words, and a bit length. */
-    #binl_md5(x, len) {
+    private binl_md5(x: number[], len: number) {
         /* These functions implement the basic operations the algorithm uses. */
-        function md5_cmn(q, a, b, x, s, t) {
+        function md5_cmn(q: number, a: number, b: number, x: number, s: number, t: number) {
             return safe_add(bit_rol(safe_add(safe_add(a, q), safe_add(x, t)), s),b)
         }
-        function md5_ff(a, b, c, d, x, s, t) {
+        function md5_ff(a: number, b: number, c: number, d: number, x: number, s: number, t: number) {
             return md5_cmn((b & c) | ((~b) & d), a, b, x, s, t)
         }
-        function md5_gg(a, b, c, d, x, s, t) {
+        function md5_gg(a: number, b: number, c: number, d: number, x: number, s: number, t: number) {
             return md5_cmn((b & d) | (c & (~d)), a, b, x, s, t)
         }
-        function md5_hh(a, b, c, d, x, s, t) {
+        function md5_hh(a: number, b: number, c: number, d: number, x: number, s: number, t: number) {
             return md5_cmn(b ^ c ^ d, a, b, x, s, t);
         }
-        function md5_ii(a, b, c, d, x, s, t) {
+        function md5_ii(a: number, b: number, c: number, d: number, x: number, s: number, t: number) {
             return md5_cmn(c ^ (b | (~d)), a, b, x, s, t);
         }
         /* Add integers, wrapping at 2^32. This uses 16-bit operations internally
         *  to work around bugs in some JS interpreters. */
-        function safe_add(x, y) {
+        function safe_add(x: number, y: number) {
             var lsw = (x & 0xFFFF) + (y & 0xFFFF)
             var msw = (x >> 16) + (y >> 16) + (lsw >> 16)
             return (msw << 16) | (lsw & 0xFFFF)
         }
         /* Bitwise rotate a 32-bit number to the left. */
-        function bit_rol(num, cnt) {
+        function bit_rol(num: number, cnt: number) {
             return (num << cnt) | (num >>> (32 - cnt));
         }
         /* MD5 main algorithm
@@ -244,31 +241,37 @@ class HashLib {
     }
 
     /* Calculate the RIPE-MD160 of an array of little-endian words, and a bit length. */
-    #binl_rmd160(x, len) {
+    private binl_rmd160(x: number[], len: number) {
         /* These functions implement the basic operations the algorithm uses. */
-        function rmd160_f(j, x, y, z) {
+        function rmd160_f(j: number, x: number, y: number, z: number) {
+            if (j>79) {
+                throw new Error("rmd160_f: j out of range");
+            }
             return ( 0 <= j && j <= 15) ? (x ^ y ^ z) :
                     (16 <= j && j <= 31) ? (x & y) | (~x & z) :
                     (32 <= j && j <= 47) ? (x | ~y) ^ z :
                     (48 <= j && j <= 63) ? (x & z) | (y & ~z) :
-                    (64 <= j && j <= 79) ? x ^ (y | ~z) :
-                    "rmd160_f: j out of range";
+                    x ^ (y | ~z);
         }
-        function rmd160_K1(j) {
+        function rmd160_K1(j: number) {
+            if (j>79) {
+                throw new Error("rmd160_K1: j out of range");
+            }
             return ( 0 <= j && j <= 15) ? 0x00000000 :
                     (16 <= j && j <= 31) ? 0x5a827999 :
                     (32 <= j && j <= 47) ? 0x6ed9eba1 :
                     (48 <= j && j <= 63) ? 0x8f1bbcdc :
-                    (64 <= j && j <= 79) ? 0xa953fd4e :
-                    "rmd160_K1: j out of range";
+                    0xa953fd4e;
             }
-        function rmd160_K2(j) {
+        function rmd160_K2(j: number) {
+            if (j>79) {
+                throw new Error("rmd160_K2: j out of range");
+            }
             return ( 0 <= j && j <= 15) ? 0x50a28be6 :
                     (16 <= j && j <= 31) ? 0x5c4dd124 :
                     (32 <= j && j <= 47) ? 0x6d703ef3 :
                     (48 <= j && j <= 63) ? 0x7a6d76e9 :
-                    (64 <= j && j <= 79) ? 0x00000000 :
-                    "rmd160_K2: j out of range";
+                    0x00000000;
         }
         var rmd160_r1 = [
             0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
@@ -303,7 +306,7 @@ class HashLib {
         * Add integers, wrapping at 2^32. This uses 16-bit operations internally
         * to work around bugs in some JS interpreters.
         */
-        function safe_add(x, y) {
+        function safe_add(x: number, y: number) {
             var lsw = (x & 0xFFFF) + (y & 0xFFFF);
             var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
             return (msw << 16) | (lsw & 0xFFFF);
@@ -312,7 +315,7 @@ class HashLib {
         /*
         * Bitwise rotate a 32-bit number to the left.
         */
-        function bit_rol(num, cnt) {
+        function bit_rol(num: number, cnt: number) {
             return (num << cnt) | (num >>> (32 - cnt));
         }
 
@@ -354,21 +357,21 @@ class HashLib {
     }
 
     /* Calculate the SHA-256 of an array of big-endian words, and a bit length. */
-    #binb_sha256(m, l){
-        function safe_add (x, y) {
+    private binb_sha256(m: number[], l: number){
+        function safe_add (x: number, y: number) {
             var lsw = (x & 0xFFFF) + (y & 0xFFFF);
             var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
             return (msw << 16) | (lsw & 0xFFFF);
         }
         /* sha256 support functions */
-        function sha256_S (X, n) {return ( X >>> n ) | (X << (32 - n));}
-        function sha256_R (X, n) {return ( X >>> n );}
-        function sha256_Ch(x, y, z) {return ((x & y) ^ ((~x) & z));}
-        function sha256_Maj(x, y, z) {return ((x & y) ^ (x & z) ^ (y & z));}
-        function sha256_Sigma0256(x) {return (sha256_S(x, 2) ^ sha256_S(x, 13) ^ sha256_S(x, 22));}
-        function sha256_Sigma1256(x) {return (sha256_S(x, 6) ^ sha256_S(x, 11) ^ sha256_S(x, 25));}
-        function sha256_Gamma0256(x) {return (sha256_S(x, 7) ^ sha256_S(x, 18) ^ sha256_R(x, 3));}
-        function sha256_Gamma1256(x) {return (sha256_S(x, 17) ^ sha256_S(x, 19) ^ sha256_R(x, 10));}
+        function sha256_S (X: number, n: number) {return ( X >>> n ) | (X << (32 - n));}
+        function sha256_R (X: number, n: number) {return ( X >>> n );}
+        function sha256_Ch(x: number, y: number, z: number) {return ((x & y) ^ ((~x) & z));}
+        function sha256_Maj(x: number, y: number, z: number) {return ((x & y) ^ (x & z) ^ (y & z));}
+        function sha256_Sigma0256(x: number) {return (sha256_S(x, 2) ^ sha256_S(x, 13) ^ sha256_S(x, 22));}
+        function sha256_Sigma1256(x: number) {return (sha256_S(x, 6) ^ sha256_S(x, 11) ^ sha256_S(x, 25));}
+        function sha256_Gamma0256(x: number) {return (sha256_S(x, 7) ^ sha256_S(x, 18) ^ sha256_R(x, 3));}
+        function sha256_Gamma1256(x: number) {return (sha256_S(x, 17) ^ sha256_S(x, 19) ^ sha256_R(x, 10));}
         /* Main sha256 function */
         var sha256_K = new Array (
             1116352408, 1899447441, -1245643825, -373957723, 961987163, 1508970993,

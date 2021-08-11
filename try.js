@@ -1,50 +1,15 @@
-'use strict'
+import { Blockchain, Contracts, Simulator } from "./out/index.js";
+import {utils} from './out/utils.js'
+import {AsmHighlight} from './out/asm_highlight.js'
+
+// Author: Rui Deleterium
+// Project: https://github.com/deleterium/SC-Simulator
+// License: BSD 3-Clause License
 
 /* Global variable */
 var auto_step_timer=undefined
 var auto_step_running=false
-
-const MachineState = {}
-
-const BlockchainState =  {
-    currentBlock: 1,
-    txHeight: 0n,
-    accounts: [],
-    transactions: [],
-}
-
-const SimulatorState = {
-    breakpoints: [ ],
-    lastUpdateMemory: []
-}
-
-const Constants = {
-    stepfee: 73500n,  //default value from signum: 73500n
-    auto_step_delay: 200, //in ms
-    deploy_add_balance: 200000000n, //added balance to contract when deploying it
-    activationAmount: 10000000n,   //contract activation amount
-    creatorID: 555n,    //Account ID of creator
-    contractID: 999n,   //Account ID of contract
-    contractDPages: 10, // Number of data pages of deployed contract
-    contractUSPages: 1, // Number of user stack pages of deployed contract
-    contractCSPages: 1, // Number of code stack pages of deployed contract
-    getRandomSleepBlocks: 15, //Sleep blocks during API to get random ticket.
-}
-
-var UpcomingTransactions = {}
-
-/*
-[
-    {
-        "sender": "10000n",
-        "recipient": "999n",
-        "amount": "100000000n",
-        "blockheight": 2,
-        "messageText": "text message to contract",
-        "messageHex": "526166666c6520656e6465642e00000000000000000000000000000000000000"
-    }
-]
-*/
+var auto_step_delay=200
 
 
 /* Functions for user interface */
@@ -65,7 +30,9 @@ window.onload = function () {
     document.getElementById("run").addEventListener('click', runContract);
     document.getElementById("loadExample").addEventListener('click', loadExample);
     document.getElementById("autostep").addEventListener('click',auto_stepContract,false);
-
+    document.getElementById("togSource").addEventListener('click', toggleSource);
+    document.getElementById("loadSlot").addEventListener('click', loadSlot);
+    
     document.getElementById("source_legend").addEventListener('click',detachSource);
     document.getElementById("actions_legend").addEventListener('click',detachActions);
     document.getElementById("memory_legend").addEventListener('click',detachMemory);
@@ -76,49 +43,72 @@ window.onload = function () {
 }
 
 // Adds manual breakpoint
-function addBreakPoint()
-{
-    if (MachineState.sourceCode===undefined) {
+function addBreakPoint(){
+    
+    if (Contracts.length == 0) {
         inform("Deploy contract before adding a breakpoint..")
         return
     }
+
     var newbp = prompt("Line?")
-    if ( SimulatorState.breakpoints.find(item => item == newbp) === undefined) {
-        SimulatorState.breakpoints.push(newbp)
-        let debug= document.getElementById("codeline"+newbp)
-        debug.className+=" breakpoint"
-
-    } else {
-        SimulatorState.breakpoints = SimulatorState.breakpoints.filter(item => item != newbp)
-        document.getElementById("codeline"+newbp).className=
-            document.getElementById("codeline"+newbp).className.replace("breakpoint","")
-    }
-}
-
-// Runs block for current block (until end or breakpoint found)
-function runContract ()
-{
-    if (MachineState.sourceCode===undefined) {
-        inform("Deploy contract before running..")
+    var linediv = document.getElementById("codeline"+newbp)
+    if (linediv === undefined) {
+        inform("Line not found. Breakpoint NOT added")
         return
     }
-    var retCode=ContractController.run()
-    inform(retCode)
+    let result = Simulator.toggleBreakpoint(Number(newbp))
+    if (result === "ADDED") {
+        linediv.className+=" breakpoint"
+        inform("Breakpoint "+newbp+" added")
+    } else if (result === "REMOVED") {
+        linediv.className= linediv.className.replace("breakpoint","")
+        inform("Breakpoint "+newbp+" removed")
+    }
+    inform(result)
+}
+
+// Handles click do add/remove breakpoint
+function clickBreakpoint()
+{
+    var e = window.event
+    var newbp = e.currentTarget.id.slice(8)
+    var linediv = document.getElementById("codeline"+newbp)
+    if (linediv === undefined) {
+        return
+    }
+    let result = Simulator.toggleBreakpoint(newbp)
+    if (result === "ADDED") {
+        linediv.className+=" breakpoint"
+        inform("Breakpoint "+newbp+" added")
+    } else if (result === "REMOVED") {
+        linediv.className= linediv.className.replace("breakpoint","")
+        inform("Breakpoint "+newbp+" removed")
+    }
+    inform(result)
+}
+
+// Runs contract for current block (until end or breakpoint found)
+function runContract ()
+{
+    auto_step_running=false
+    clearTimeout(auto_step_timer)
+
+    var retString=Simulator.runSlotContract()
+    inform(retString)
     updatePage()
 }
 
 // Runs only one instruction
 function stepContract()
 {
-    if (MachineState.sourceCode===undefined) {
-        inform("Deploy contract before stepping..")
-        return
-    }
-    var retCode = ContractController.step()
-    if (retCode === undefined) {
+    auto_step_running=false
+    clearTimeout(auto_step_timer)
+
+    var retString = Simulator.stepSlotContract()
+    if (retString === "") {
         inform("Step done.")
     } else {
-        inform(retCode)
+        inform(retString)
     }
     updatePage()
 }
@@ -126,7 +116,7 @@ function stepContract()
 // Runs steps with timeInterval
 function auto_stepContract(click)
 {
-    if (MachineState.sourceCode===undefined) {
+    if (Simulator.getNumberOfContracts() == -1) {
         inform("Deploy contract before auto-stepping..")
         return
     }
@@ -138,13 +128,13 @@ function auto_stepContract(click)
         inform("Auto-step interrupted")
         return
     }
-    var retCode = ContractController.step()
-    if (retCode === undefined) {
-        auto_step_timer=setTimeout(auto_stepContract, Constants.auto_step_delay)
+    var retString = Simulator.stepSlotContract()
+    if (retString === "") {
+        auto_step_timer=setTimeout(auto_stepContract, auto_step_delay)
         inform("Auto-stepping...")
     } else {
         auto_step_running=false
-        inform(retCode)
+        inform(retString)
     }
     updatePage()
 }
@@ -152,107 +142,120 @@ function auto_stepContract(click)
 // Simulate forging one block
 function forgeBlock()
 {
-    if (MachineState.sourceCode===undefined) {
-        inform("Deploy contract before forging a block..")
-        return
-    }
-    try {
-        UpcomingTransactions = JSON.parse(document.getElementById("transactions").value, (key, value) => {
-            if (typeof value === "string") {
-                if (/^[\d_]+n$/.test(value)) {
-                    return BigInt(value.substr(0, value.length - 1).replaceAll("_",""));
-                }
-                if (/^0[xX][\da-fA-F_]+n$/.test(value)) {
-                    return BigInt(value.substr(0, value.length - 1).replaceAll("_",""));
-                }
-                if (key === "blockheight") {
-                    return Number(value);
-                }
-                if (key === "sender" || key === "recipient" || key === "amount") {
-                    return BigInt(value.replaceAll("_",""));
-                }
-            }
-            return value;
-        })
-    } catch (error) {
-        inform("Could not parse transactions JSON text. Atention on ','!!! "+error)
-        return
-    }
-    // Verify if ended execution this block
-    if (MachineState.frozen === false &&
-        MachineState.running === true) {
-        inform("End contract execution on this block to continue.")
-        return
-    }
-    ContractController.dispatchEnqueuedTX()
-    BlockchainState.currentBlock++
-    BlockchainState.txHeight = 0n
-    BlockchainController.processBlock()
-    ContractController.processBlock()
-    inform("Block #"+BlockchainState.currentBlock+" forged!")
+
+    let rcString = Simulator.forgeBlock(document.getElementById("transactions").value)
+    inform(rcString)
     updatePage()
+}
+
+function setColorSource(){
+    let sourceDOM = document.getElementById("source-code")
+    let colorDOM = document.getElementById('color_code')
+    if (Simulator.currSlotContract === undefined) {
+        inform("No contract deployed.")
+        return
+    }
+    colorDOM.innerHTML=AsmHighlight.toHTML(Contracts[Simulator.currSlotContract].sourceCode.join("\n"));
+    sourceDOM.style.display="none"
+    colorDOM.style.display="block"
+    var collection = document.getElementsByClassName('asmVariable');
+    for(let i = 0; i < collection.length; i++) {
+        collection[i].addEventListener("mouseover", showInspector)
+        collection[i].addEventListener("mouseout", hideInspector)
+    }
+    collection = document.getElementsByClassName('asmNumber');
+    for(let i = 0; i < collection.length; i++) {
+        collection[i].addEventListener("mouseover", showInspector)
+        collection[i].addEventListener("mouseout", hideInspector)
+    }
+    collection = document.getElementsByClassName('asmLabel');
+    for(let i = 0; i < collection.length; i++) {
+        collection[i].addEventListener("mouseover", showLabel)
+        collection[i].addEventListener("mouseout", hideInspector)
+    }
+    collection = document.getElementsByClassName('line');
+    for(let i = 0; i < collection.length; i++) {
+        collection[i].addEventListener("click", clickBreakpoint)
+    }
+    updatePage()
+}
+function setSourceCode(){
+    let sourceDOM = document.getElementById("source-code")
+    let colorDOM = document.getElementById('color_code')
+    if (Simulator.currSlotContract === undefined) {
+        inform("No contract deployed.")
+        return
+    }
+    colorDOM.innerHTML=""
+    colorDOM.style.display="none"
+    sourceDOM.style.display="block"
+    sourceDOM.value=Contracts[Simulator.currSlotContract].sourceCode.join("\n")
+    inform("You can edit/change source code.")
+    textKeyUp()
+}
+// Toggle source code or code highlighted for debug
+function toggleSource(){
+    let colorDOM = document.getElementById('color_code')
+    if (Contracts.length==0) {
+        inform("No contract deployed.")
+        return
+    }
+    if (colorDOM.style.display === "block") {
+        setSourceCode()
+        return
+    }
+    setColorSource()
+}
+
+function loadSlot() {
+    let numCc = Simulator.getNumberOfContracts()
+    if (numCc == -1) {
+        return
+    }
+    let slot = Number(prompt("Which contract? 0.."+numCc))
+
+    if (slot <0 && slot > numCc) {
+        inform("Invalid slot number.")
+        return
+    }
+    Simulator.currSlotContract = slot
+    setColorSource()
 }
 
 // Deploy contract and sets all variables to default
 function deploy()
 {
     let sourceDOM = document.getElementById("source-code")
-    let colorDOM = document.getElementById('color_code')
     let source = sourceDOM.value
     if (source.length<=1) {
         inform("Could not load an empty contract.")
         return
     }
-    MachineState.instructionPointer= 0
-    MachineState.sleepUntilBlock= 0
-    MachineState.previousBalance= 0
-    MachineState.frozen= false
-    MachineState.running=true
-    MachineState.stopped=false
-    MachineState.finished=false
-    MachineState.dead=false
-    MachineState.activationAmount = Constants.activationAmount
-    MachineState.creator= Constants.creatorID
-    MachineState.contract= Constants.contractID
-    MachineState.DataPages= Constants.contractDPages
-    MachineState.UserStackPages= Constants.contractUSPages
-    MachineState.CodeStackPages= Constants.contractUSPages
-    MachineState.Memory= []
-    MachineState.UserStack= []
-    MachineState.CodeStack= []
-    MachineState.A= [ 0n, 0n, 0n, 0n ]
-    MachineState.B= [ 0n, 0n, 0n, 0n ]
-    MachineState.PCS= null
-    MachineState.ERR= null
-    BlockchainState.currentBlock= 1
-    BlockchainState.accounts= []
-    BlockchainState.transactions= []
-    BlockchainState.accounts.push( { id: Constants.contractID, balance: Constants.deploy_add_balance} )
-    SimulatorState.breakpoints=[]
-    if (MachineState.sourceCode !== undefined) {
-        MachineState.sourceCode=undefined
-        colorDOM.innerHTML=""
-        colorDOM.style.display="none"
-        sourceDOM.style.display="block"
-        updatePage()
-        inform("Contract unloaded")
-        return
-    }
-    MachineState.sourceCode=source.split("\n")
-    colorDOM.innerHTML=asm_highlight(source);
-    sourceDOM.style.display="none"
-    colorDOM.style.display="block"
-    cpu_deploy()
-    updatePage()
-    inform("Contract deployed. Ready to run")
+    Simulator.deploy(source)
+    inform("Contract id "+Contracts[Contracts.length-1].contract.toString(10)+" deployed on slot "+(Contracts.length-1)+". Ready to run")
 }
 
 // Handles apearing/hiding inspector floating div and update its contents (for variables/numbers)
-function showInspector(asmVar)
+function hideInspector()
 {
-    asmVar = asmVar.trim()
+    document.getElementById("inspectorID").style.display="none"
+}
+
+// Handles apearing/hiding inspector floating div and update its contents (for variables/numbers)
+function showInspector()
+{
     var e = window.event
-    let variable = MachineState.Memory.find(mem => mem.name == asmVar)
+    let asmVar = e.currentTarget.innerText.slice(1).trim()
+    if (Contracts.length == 0){
+        return
+    }
+    let mydiv = document.getElementById("inspectorID")
+    if (mydiv.style.display==="block") {
+        mydiv.style.display="none"
+        return
+    }
+    let ContractState = Contracts[Contracts.length - 1]
+    let variable = ContractState.Memory.find(mem => mem.varName == asmVar)
     let value
     if (variable !== undefined) {
         value = variable.value
@@ -261,7 +264,7 @@ function showInspector(asmVar)
     } else {
         return
     }
-    let mydiv = document.getElementById("inspectorID")
+
     let content = '<table><tbody><tr><th colspan="2">'+asmVar+'</th></tr>'
             + '<tr><td>Hex: </td><td>'
             + "0x"+value.toString(16)
@@ -275,52 +278,34 @@ function showInspector(asmVar)
     mydiv.innerHTML = content
     mydiv.style.left = (e.layerX+20)+'px';
     mydiv.style.top = (e.layerY+20)+'px';
-    if (mydiv.style.display==="block") {
-        mydiv.style.display="none"
-    } else {
-        mydiv.style.display="block"
-    }
+    mydiv.style.display="block"
 }
 
 // Handles apearing/hiding inspector floating div and update its contents (for labels)
-function showLabel(textLabel)
+function showLabel()
 {
-    textLabel = textLabel.trim()
     var e = window.event
-    let custom_regex = new RegExp("^\\s*("+textLabel+"):\\s*$")
-    let destination = MachineState.sourceCode.findIndex( line => custom_regex.exec(line) !== null)
-    if (destination == -1){
+    let textLabel = e.currentTarget.innerText.trim().replace(":","")
+    if (Contracts.length == 0){
         return
     }
+    let ContractState = Contracts[Contracts.length - 1]
     let mydiv = document.getElementById("inspectorID")
+    if (mydiv.style.display==="block") {
+        mydiv.style.display="none"
+        return
+    }
+    let custom_regex = new RegExp("^\\s*("+textLabel+"):\\s*$")
+    let destination = ContractState.sourceCode.findIndex( line => custom_regex.exec(line) !== null)
     let content = '<table><tbody><tr><th>'+textLabel+'</th></tr>'
             +'<tr><td>Line '+destination+'</td></tr>'
             +'</tbody></table>'
     mydiv.innerHTML = content
     mydiv.style.left = (e.layerX+20)+'px';
     mydiv.style.top = (e.layerY+20)+'px';
-    if (mydiv.style.display==="block") {
-        mydiv.style.display="none"
-    } else {
-        mydiv.style.display="block"
-    }
+    mydiv.style.display="block"
 }
 
-// Handles click do add/remove breakpoint
-function clickBreakpoint()
-{
-    var e = window.event
-    var newbp = e.currentTarget.id.slice(8)
-    if ( SimulatorState.breakpoints.find(item => item == newbp) === undefined) {
-        SimulatorState.breakpoints.push(newbp)
-        let debug= document.getElementById("codeline"+newbp)
-        debug.className+=" breakpoint"
-    } else {
-        SimulatorState.breakpoints = SimulatorState.breakpoints.filter(item => item != newbp)
-        document.getElementById("codeline"+newbp).className=
-        document.getElementById("codeline"+newbp).className.replace("breakpoint","")
-    }
-}
 
 // Update simulator message
 function inform(message)
@@ -331,73 +316,55 @@ function inform(message)
 // Handle showing memory/registers table with all values
 function updatePage()
 {
-    function clone(aObject) {
-        if (!aObject) {
-          return aObject;
-        }
-        let v;
-        let bObject = Array.isArray(aObject) ? [] : {};
-        for (const k in aObject) {
-          v = aObject[k];
-          bObject[k] = (typeof v === "object") ? clone(v) : v;
-        }
-        return bObject;
-    }
-
     let output = ""
     let currVal
 
+    if (Simulator.currSlotContract === undefined){
+        return
+    }
+    let ContractState = Contracts[Simulator.currSlotContract]
     // Boolean properties
     output += '<table class="table-all"><tbody><tr>'
 
-    if (MachineState.frozen) output += '<td class="taleft updatedVal">Frozen: '
+    if (ContractState.frozen) output += '<td class="taleft updatedVal">Frozen: '
     else output += '<td class="taleft">Frozen: '
-    output += MachineState.frozen.toString() + '</td>'
+    output += ContractState.frozen.toString() + '</td>'
 
-    if (MachineState.running) output += '<td class="updatedVal">Running: '
+    if (ContractState.running) output += '<td class="updatedVal">Running: '
     else output += '<td>Running: '
-    output += MachineState.running.toString() + '</td>'
+    output += ContractState.running.toString() + '</td>'
 
-    if (MachineState.stopped) output += '<td class="updatedVal">Stopped: '
+    if (ContractState.stopped) output += '<td class="updatedVal">Stopped: '
     else output += '<td>Stopped: '
-    output += MachineState.stopped.toString() + '</td>'
+    output += ContractState.stopped.toString() + '</td>'
 
-    if (MachineState.finished) output += '<td class="updatedVal">Finished: '
+    if (ContractState.finished) output += '<td class="updatedVal">Finished: '
     else output += '<td>Finished: '
-    output += MachineState.finished.toString() + '</td>'
+    output += ContractState.finished.toString() + '</td>'
 
-    if (MachineState.dead) output += '<td class="updatedVal">Dead: '
+    if (ContractState.dead) output += '<td class="updatedVal">Dead: '
     else output += '<td>Dead: '
-    output += MachineState.dead.toString() + '</td>'
+    output += ContractState.dead.toString() + '</td>'
 
     output += '</tr><tr>'
-    output += '<td colspan="2"  class="taleft">Balance: '+utils.long2stringBalance(BlockchainState.accounts.find(obj => obj.id == MachineState.contract).balance) + '</td>'
-    if (MachineState.instructionPointer === null)
-        output += '<td title="Instruction pointer (next line)">IP: null</td>'
-    else
-        output += '<td title="Instruction pointer (next line)">IP: '+MachineState.instructionPointer.toString() + '</td>'
+    output += '<td colspan="2"  class="taleft">Balance: '+utils.long2stringBalance(Blockchain.getBalanceFrom(ContractState.contract)) + '</td>'
+    output += '<td title="Instruction pointer (next line)">IP: '+ContractState.instructionPointer.toString() + '</td>'
     output += '<td> '+'' + '</td>'
     /*output += '<td>: '+'' + '</td>'*/
     output += '<td> '+'' + '</td>'
     output += '</tr></tbody></table>'
 
-    // Memory content
-    if (SimulatorState.lastUpdateMemory.length == 0) {
-        SimulatorState.lastUpdateMemory = clone(MachineState.Memory)
-        SimulatorState.lastA = clone(MachineState.A)
-        SimulatorState.lastB = clone(MachineState.B)
-    }
     output += '<table class="table-all"><tbody><tr><th>#</th><th class="taleft">Variable</th><th>Hex</th>'+
               '<th>String</th><th>Unsigned dec</th><th>Signed dec</th></tr>'
-    for (let idx = 0; idx<MachineState.Memory.length; idx++){
-        currVal = MachineState.Memory[idx].value
-        if (SimulatorState.lastUpdateMemory[idx] !== undefined && currVal == SimulatorState.lastUpdateMemory[idx].value) {
+    for (let idx = 0; idx<ContractState.Memory.length; idx++){
+        currVal = ContractState.Memory[idx].value
+        if (Simulator.lastUpdateMemory[idx] !== undefined && currVal == Simulator.lastUpdateMemory[idx].value) {
             output +='<tr><td>'
         } else {
             output +='<tr class="updatedVal"><td>'
         }
         output += idx + '</td><td class="taleft">'
-               + MachineState.Memory[idx].name
+               + ContractState.Memory[idx].varName
                + '</td><td>'
                + "0x"+currVal.toString(16)
                + '</td><td>'
@@ -411,8 +378,8 @@ function updatePage()
     }
     // A register
     for (let idx = 0; idx<4; idx++){
-        currVal = MachineState.A[idx]
-        if (SimulatorState.lastA !== undefined && currVal == SimulatorState.lastA[idx]) {
+        currVal = ContractState.A[idx]
+        if (Simulator.lastA !== undefined && currVal == Simulator.lastA[idx]) {
             output +='<tr><td>'
         } else {
             output +='<tr class="updatedVal"><td>'
@@ -431,8 +398,8 @@ function updatePage()
     }
     // B register
     for (let idx = 0; idx<4; idx++){
-        currVal = MachineState.B[idx]
-        if (SimulatorState.lastB !== undefined && currVal == SimulatorState.lastB[idx]) {
+        currVal = ContractState.B[idx]
+        if (Simulator.lastB !== undefined && currVal == Simulator.lastB[idx]) {
             output +='<tr><td>'
         } else {
             output +='<tr class="updatedVal"><td>'
@@ -453,27 +420,24 @@ function updatePage()
 
     // Other properties
     output +='<pre>'
-    output += JSON.stringify(MachineState,stringifyReplacer,"   ")
+    output += JSON.stringify(ContractState,stringifyReplacer,"   ")
     output += '\n</pre>'
     document.getElementById("memory_window").innerHTML = output
-
 
     // Highlighted line
     let line = document.getElementsByClassName("activeline")
     if (line[0] !== undefined)
         line[0].className=line[0].className.replace("activeline","")
-    line = document.getElementById("codeline"+(MachineState.instructionPointer))
+    line = document.getElementById("codeline"+(ContractState.instructionPointer))
     if (line !== null) {
         line.className+=" activeline"
     }
 
     // Blockchain status
-    document.getElementById("blockchain_output").innerHTML = JSON.stringify(BlockchainState, stringifyReplacer, "   ")
+    document.getElementById("blockchain_output").innerHTML = JSON.stringify(Blockchain.accounts, stringifyReplacer, "   ")+JSON.stringify(Blockchain.transactions, stringifyReplacer, "   ")
 
     // Save last memory state
-    SimulatorState.lastUpdateMemory = clone(MachineState.Memory)
-    SimulatorState.lastA = clone(MachineState.A)
-    SimulatorState.lastB = clone(MachineState.B)
+    Simulator.updateLastMemoryValues()
 
 }
 
@@ -486,7 +450,7 @@ function textKeyUp ()
     elem.rows = newrow;
  }
 
-// Handles showing objects for MachineState object
+// Handles showing objects
 function stringifyReplacer(key, value)
 {
     if (   key == "Memory"
@@ -579,10 +543,11 @@ function detachBlockchain(){
     document.getElementById("blockchain_fieldset").style.display="none";
 }
 
+var SIMul
 // Function to load a simple example
 function loadExample() {
 
-    if (MachineState.sourceCode!==undefined) {
+    if (Simulator.currSlotContract!==undefined) {
         inform("Can not load example if contract is deployed...")
         return
     }
