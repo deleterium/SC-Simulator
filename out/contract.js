@@ -177,8 +177,8 @@ export class CONTRACT {
                 timestamp: (BigInt(Blockchain.currentBlock) << 32n) + Blockchain.txHeight,
                 messageArr: tx.messageArr,
                 processed: false,
-                messageText: messageHex,
-                messageHex: utils.hexstring2string(messageHex),
+                messageHex: messageHex,
+                messageText: utils.hexstring2string(messageHex),
             });
         });
         this.enqueuedTX = [];
