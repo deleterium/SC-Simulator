@@ -924,6 +924,7 @@ export class CPU {
         ContractState.frozen=true
         account.balance += Constants.stepfee * InstructionObj.stepFee
         ContractState.previousBalance = account.balance
+        return true
     }
     return InstructionObj.execute(ContractState, currParts)
 }
