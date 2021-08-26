@@ -434,7 +434,12 @@ function updatePage()
     }
 
     // Blockchain status
-    document.getElementById("blockchain_output").innerHTML = JSON.stringify(Blockchain.accounts, stringifyReplacer, "   ")+JSON.stringify(Blockchain.transactions, stringifyReplacer, "   ")
+    document.getElementById("blockchain_output").innerHTML = "Registered accounts = " +
+        JSON.stringify(Blockchain.accounts, stringifyReplacer, "   ") +
+        "<br><br>Registered transactions = " +
+        JSON.stringify(Blockchain.transactions, stringifyReplacer, "   ") +
+        "<br><br>Current blockheight = " +
+        Blockchain.currentBlock.toString(10)
 
     // Save last memory state
     Simulator.updateLastMemoryValues()
