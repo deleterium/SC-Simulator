@@ -726,7 +726,9 @@ CPU.cpu_microcode = [
             if (variable === undefined)
                 val1 = 0n;
             else
-                val1 = variable.value;
+                val1 = utils.unsigned2signed(variable.value);
+            if (val1 < 1)
+                val1 = 1;
             ContractState.frozen = false;
             ContractState.running = false;
             ContractState.stopped = true;
