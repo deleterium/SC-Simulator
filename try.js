@@ -254,7 +254,7 @@ function showInspector()
         mydiv.style.display="none"
         return
     }
-    let ContractState = Contracts[Contracts.length - 1]
+    let ContractState = Contracts[Simulator.currSlotContract]
     let variable = ContractState.Memory.find(mem => mem.varName == asmVar)
     let value
     if (variable !== undefined) {
