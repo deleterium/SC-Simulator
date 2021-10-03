@@ -1,4 +1,4 @@
-import { Contracts, Blockchain, Simulator, Constants, } from './index.js';
+import { Contracts, Blockchain, Simulator, Constants } from './index.js';
 import { CONTRACT } from './contract.js';
 export class SIMULATOR {
     constructor() {
@@ -19,18 +19,18 @@ export class SIMULATOR {
     parseUpcomingTransactions(JSONobj) {
         try {
             this.UpcomingTransactions = JSON.parse(JSONobj, (key, value) => {
-                if (typeof value === "string") {
+                if (typeof value === 'string') {
                     if (/^[\d_]+n$/.test(value)) {
-                        return BigInt(value.substr(0, value.length - 1).replace(/_/g, ""));
+                        return BigInt(value.substr(0, value.length - 1).replace(/_/g, ''));
                     }
                     if (/^0[xX][\da-fA-F_]+n$/.test(value)) {
-                        return BigInt(value.substr(0, value.length - 1).replace(/_/g, ""));
+                        return BigInt(value.substr(0, value.length - 1).replace(/_/g, ''));
                     }
-                    if (key === "blockheight") {
+                    if (key === 'blockheight') {
                         return Number(value);
                     }
-                    if (key === "sender" || key === "recipient" || key === "amount") {
-                        return BigInt(value.replace(/_/g, ""));
+                    if (key === 'sender' || key === 'recipient' || key === 'amount') {
+                        return BigInt(value.replace(/_/g, ''));
                     }
                 }
                 return value;
@@ -39,7 +39,7 @@ export class SIMULATOR {
         catch (error) {
             return "Could not parse transactions JSON text. Atention on ','!!! " + error;
         }
-        return "";
+        return '';
     }
     /**
      * Handle process of forging one block
@@ -50,9 +50,9 @@ export class SIMULATOR {
      * @return string indicating status or error.
      */
     forgeBlock(nextTXs) {
-        let rcString = "";
+        let rcString = '';
         rcString = this.parseUpcomingTransactions(nextTXs);
-        if (rcString !== "") {
+        if (rcString !== '') {
             // Avoid any execution if object is malformed
             return rcString;
         }
@@ -66,17 +66,11 @@ export class SIMULATOR {
         Blockchain.addTransactions(this.UpcomingTransactions);
         // This actually increases blockheigth count.
         Blockchain.forgeBlock();
-        /*
-                // Includes transaction from smart contracts executed in block N at blockheight N + 1
-                Contracts.forEach( curContract => {
-                    curContract.dispatchEnqueuedTX()
-                })
-         */
         // Checks and activates contracts at this blockheight
         Contracts.forEach(curContract => {
             curContract.forgeBlock();
         });
-        return "Block #" + Blockchain.currentBlock + " forged!";
+        return 'Block #' + Blockchain.currentBlock + ' forged!';
     }
     /**
      * Activate/deactivate a breakpoint
@@ -87,18 +81,18 @@ export class SIMULATOR {
      */
     toggleBreakpoint(bpline) {
         if (this.currSlotContract === undefined) {
-            return "No contract deployed..";
+            return 'No contract deployed..';
         }
-        if (Contracts[this.currSlotContract].getNextInstructionLine(bpline) != bpline) {
-            return "Line " + bpline + " is not an instruction. Breakpoint NOT added";
+        if (Contracts[this.currSlotContract].getNextInstructionLine(bpline) !== bpline) {
+            return `Line ${bpline} is not an instruction. Breakpoint NOT added.`;
         }
-        if (this.breakpoints.find(item => item == bpline) === undefined) {
+        if (this.breakpoints.find(item => item === bpline) === undefined) {
             this.breakpoints.push(bpline);
-            return "ADDED";
+            return 'ADDED';
         }
         else {
-            this.breakpoints = this.breakpoints.filter(item => item != bpline);
-            return "REMOVED";
+            this.breakpoints = this.breakpoints.filter(item => item !== bpline);
+            return 'REMOVED';
         }
     }
     /**
@@ -106,7 +100,7 @@ export class SIMULATOR {
      */
     runSlotContract() {
         if (this.currSlotContract === undefined) {
-            return "Deploy contract before run...";
+            return 'Deploy contract before run...';
         }
         return Contracts[this.currSlotContract].run(Simulator.breakpoints);
     }
@@ -115,7 +109,7 @@ export class SIMULATOR {
      */
     stepSlotContract() {
         if (this.currSlotContract === undefined) {
-            return "Deploy contract before step...";
+            return 'Deploy contract before step...';
         }
         return Contracts[this.currSlotContract].step();
     }
@@ -129,10 +123,10 @@ export class SIMULATOR {
     /**
      * Deploy a new contract
      *
-     * @param asm_sourcecode new contract source code to be deployed
+     * @param asmSourceCode new contract source code to be deployed
      */
-    deploy(asm_sourcecode) {
-        let newContract = new CONTRACT(asm_sourcecode);
+    deploy(asmSourceCode) {
+        const newContract = new CONTRACT(asmSourceCode);
         this.currSlotContract = Contracts.push(newContract) - 1;
         Blockchain.addBalanceTo(newContract.contract, Constants.deploy_add_balance);
         newContract.forgeBlock();

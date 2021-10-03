@@ -15,16 +15,17 @@ export class HashLib {
         this.hashType = hashType;
         this.uLongsArr = []; // Contains an array of 64-bit unsigned BigInt
         this.sWordsArr = []; // Contains an array of 32-bit signed Number
+        this.hashType = hashType;
     }
     hash(arr) {
         this.uLongsArr = arr;
-        if (this.hashType === "MD5") {
+        if (this.hashType === 'MD5') {
             return this.hashMD5();
         }
-        if (this.hashType === "RIPEMD160") {
+        if (this.hashType === 'RIPEMD160') {
             return this.hashRIPEMD160();
         }
-        if (this.hashType === "SHA256") {
+        if (this.hashType === 'SHA256') {
             return this.hashSHA256();
         }
         return [0n];
@@ -32,20 +33,20 @@ export class HashLib {
     hashMD5() {
         this.uLongsArr2sWordsArr();
         this.sWordsArr = this.binl_md5(this.sWordsArr, 4 * 8 * this.sWordsArr.length);
-        let aa = this.signed2unsigned(BigInt(this.sWordsArr[0]));
-        let bb = this.signed2unsigned(BigInt(this.sWordsArr[1]));
-        let cc = this.signed2unsigned(BigInt(this.sWordsArr[2]));
-        let dd = this.signed2unsigned(BigInt(this.sWordsArr[3]));
+        const aa = this.signed2unsigned(BigInt(this.sWordsArr[0]));
+        const bb = this.signed2unsigned(BigInt(this.sWordsArr[1]));
+        const cc = this.signed2unsigned(BigInt(this.sWordsArr[2]));
+        const dd = this.signed2unsigned(BigInt(this.sWordsArr[3]));
         return [(bb << 32n) + aa, (dd << 32n) + cc];
     }
     hashRIPEMD160() {
         this.uLongsArr2sWordsArr();
         this.sWordsArr = this.binl_rmd160(this.sWordsArr, 4 * 8 * this.sWordsArr.length);
-        let aa = this.signed2unsigned(BigInt(this.sWordsArr[0]));
-        let bb = this.signed2unsigned(BigInt(this.sWordsArr[1]));
-        let cc = this.signed2unsigned(BigInt(this.sWordsArr[2]));
-        let dd = this.signed2unsigned(BigInt(this.sWordsArr[3]));
-        let ee = this.signed2unsigned(BigInt(this.sWordsArr[4]));
+        const aa = this.signed2unsigned(BigInt(this.sWordsArr[0]));
+        const bb = this.signed2unsigned(BigInt(this.sWordsArr[1]));
+        const cc = this.signed2unsigned(BigInt(this.sWordsArr[2]));
+        const dd = this.signed2unsigned(BigInt(this.sWordsArr[3]));
+        const ee = this.signed2unsigned(BigInt(this.sWordsArr[4]));
         return [(bb << 32n) + aa, (dd << 32n) + cc, ee];
     }
     hashSHA256() {
@@ -53,19 +54,20 @@ export class HashLib {
         this.sWordsArrToggleEndian();
         this.sWordsArr = this.binb_sha256(this.sWordsArr, 4 * 8 * this.sWordsArr.length);
         this.sWordsArrToggleEndian();
-        let aa = this.signed2unsigned(BigInt(this.sWordsArr[0]));
-        let bb = this.signed2unsigned(BigInt(this.sWordsArr[1]));
-        let cc = this.signed2unsigned(BigInt(this.sWordsArr[2]));
-        let dd = this.signed2unsigned(BigInt(this.sWordsArr[3]));
-        let ee = this.signed2unsigned(BigInt(this.sWordsArr[4]));
-        let ff = this.signed2unsigned(BigInt(this.sWordsArr[5]));
-        let gg = this.signed2unsigned(BigInt(this.sWordsArr[6]));
-        let hh = this.signed2unsigned(BigInt(this.sWordsArr[7]));
+        const aa = this.signed2unsigned(BigInt(this.sWordsArr[0]));
+        const bb = this.signed2unsigned(BigInt(this.sWordsArr[1]));
+        const cc = this.signed2unsigned(BigInt(this.sWordsArr[2]));
+        const dd = this.signed2unsigned(BigInt(this.sWordsArr[3]));
+        const ee = this.signed2unsigned(BigInt(this.sWordsArr[4]));
+        const ff = this.signed2unsigned(BigInt(this.sWordsArr[5]));
+        const gg = this.signed2unsigned(BigInt(this.sWordsArr[6]));
+        const hh = this.signed2unsigned(BigInt(this.sWordsArr[7]));
         return [(bb << 32n) + aa, (dd << 32n) + cc, (ff << 32n) + ee, (hh << 32n) + gg];
     }
     sWordsArrToggleEndian() {
-        let bi = this.sWordsArr.map(x => this.signed2unsigned(BigInt(x)));
-        let worarr = [], val;
+        const bi = this.sWordsArr.map(x => this.signed2unsigned(BigInt(x)));
+        const worarr = [];
+        let val;
         for (let i = 0; i < bi.length; i++) {
             val = (bi[i] >> 24n) & 0xffn;
             val |= ((bi[i] >> 16n) & 0xffn) << 8n;
@@ -76,7 +78,8 @@ export class HashLib {
         this.sWordsArr = worarr;
     }
     uLongsArr2sWordsArr() {
-        let worarr = [], val;
+        const worarr = [];
+        let val;
         for (let i = 0n; i < this.uLongsArr.length * 2; i++) {
             val = (this.uLongsArr[Number(i / 2n)] >> ((i % 2n) * 32n)) & 0xffffffffn;
             worarr.push(Number(this.unsigned2signed(val)));
@@ -97,6 +100,7 @@ export class HashLib {
         }
         return signed;
     }
+    /* eslint-disable camelcase */
     /* Calculate the MD5 of an array of little-endian words, and a bit length. */
     binl_md5(x, len) {
         /* These functions implement the basic operations the algorithm uses. */
@@ -118,8 +122,8 @@ export class HashLib {
         /* Add integers, wrapping at 2^32. This uses 16-bit operations internally
         *  to work around bugs in some JS interpreters. */
         function safe_add(x, y) {
-            var lsw = (x & 0xFFFF) + (y & 0xFFFF);
-            var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+            const lsw = (x & 0xFFFF) + (y & 0xFFFF);
+            const msw = (x >> 16) + (y >> 16) + (lsw >> 16);
             return (msw << 16) | (lsw & 0xFFFF);
         }
         /* Bitwise rotate a 32-bit number to the left. */
@@ -130,15 +134,15 @@ export class HashLib {
         /* append padding */
         x[len >> 5] |= 0x80 << ((len) % 32);
         x[(((len + 64) >>> 9) << 4) + 14] = len;
-        var a = 1732584193;
-        var b = -271733879;
-        var c = -1732584194;
-        var d = 271733878;
-        for (var i = 0; i < x.length; i += 16) {
-            var olda = a;
-            var oldb = b;
-            var oldc = c;
-            var oldd = d;
+        let a = 1732584193;
+        let b = -271733879;
+        let c = -1732584194;
+        let d = 271733878;
+        for (let i = 0; i < x.length; i += 16) {
+            const olda = a;
+            const oldb = b;
+            const oldc = c;
+            const oldd = d;
             a = md5_ff(a, b, c, d, x[i + 0], 7, -680876936);
             d = md5_ff(d, a, b, c, x[i + 1], 12, -389564586);
             c = md5_ff(c, d, a, b, x[i + 2], 17, 606105819);
@@ -215,56 +219,68 @@ export class HashLib {
         /* These functions implement the basic operations the algorithm uses. */
         function rmd160_f(j, x, y, z) {
             if (j > 79) {
-                throw new Error("rmd160_f: j out of range");
+                throw new Error('rmd160_f: j out of range');
             }
-            return (0 <= j && j <= 15) ? (x ^ y ^ z) :
-                (16 <= j && j <= 31) ? (x & y) | (~x & z) :
-                    (32 <= j && j <= 47) ? (x | ~y) ^ z :
-                        (48 <= j && j <= 63) ? (x & z) | (y & ~z) :
-                            x ^ (y | ~z);
+            return (j >= 0 && j <= 15)
+                ? (x ^ y ^ z)
+                : (j >= 16 && j <= 31)
+                    ? (x & y) | (~x & z)
+                    : (j >= 32 && j <= 47)
+                        ? (x | ~y) ^ z
+                        : (j >= 48 && j <= 63)
+                            ? (x & z) | (y & ~z)
+                            : x ^ (y | ~z);
         }
         function rmd160_K1(j) {
             if (j > 79) {
-                throw new Error("rmd160_K1: j out of range");
+                throw new Error('rmd160_K1: j out of range');
             }
-            return (0 <= j && j <= 15) ? 0x00000000 :
-                (16 <= j && j <= 31) ? 0x5a827999 :
-                    (32 <= j && j <= 47) ? 0x6ed9eba1 :
-                        (48 <= j && j <= 63) ? 0x8f1bbcdc :
-                            0xa953fd4e;
+            return (j >= 0 && j <= 15)
+                ? 0x00000000
+                : (j >= 16 && j <= 31)
+                    ? 0x5a827999
+                    : (j >= 32 && j <= 47)
+                        ? 0x6ed9eba1
+                        : (j >= 48 && j <= 63)
+                            ? 0x8f1bbcdc
+                            : 0xa953fd4e;
         }
         function rmd160_K2(j) {
             if (j > 79) {
-                throw new Error("rmd160_K2: j out of range");
+                throw new Error('rmd160_K2: j out of range');
             }
-            return (0 <= j && j <= 15) ? 0x50a28be6 :
-                (16 <= j && j <= 31) ? 0x5c4dd124 :
-                    (32 <= j && j <= 47) ? 0x6d703ef3 :
-                        (48 <= j && j <= 63) ? 0x7a6d76e9 :
-                            0x00000000;
+            return (j >= 0 && j <= 15)
+                ? 0x50a28be6
+                : (j >= 16 && j <= 31)
+                    ? 0x5c4dd124
+                    : (j >= 32 && j <= 47)
+                        ? 0x6d703ef3
+                        : (j >= 48 && j <= 63)
+                            ? 0x7a6d76e9
+                            : 0x00000000;
         }
-        var rmd160_r1 = [
+        const rmd160_r1 = [
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
             7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5, 2, 14, 11, 8,
             3, 10, 14, 4, 9, 15, 8, 1, 2, 7, 0, 6, 13, 11, 5, 12,
             1, 9, 11, 10, 0, 8, 12, 4, 13, 3, 7, 15, 14, 5, 6, 2,
             4, 0, 5, 9, 7, 12, 2, 10, 14, 1, 3, 8, 11, 6, 15, 13
         ];
-        var rmd160_r2 = [
+        const rmd160_r2 = [
             5, 14, 7, 0, 9, 2, 11, 4, 13, 6, 15, 8, 1, 10, 3, 12,
             6, 11, 3, 7, 0, 13, 5, 10, 14, 15, 8, 12, 4, 9, 1, 2,
             15, 5, 1, 3, 7, 14, 6, 9, 11, 8, 12, 2, 10, 0, 4, 13,
             8, 6, 4, 1, 3, 11, 15, 0, 5, 12, 2, 13, 9, 7, 10, 14,
             12, 15, 10, 4, 1, 5, 8, 7, 6, 2, 13, 14, 0, 3, 9, 11
         ];
-        var rmd160_s1 = [
+        const rmd160_s1 = [
             11, 14, 15, 12, 5, 8, 7, 9, 11, 13, 14, 15, 6, 7, 9, 8,
             7, 6, 8, 13, 11, 9, 7, 15, 7, 12, 15, 9, 11, 7, 13, 12,
             11, 13, 6, 7, 14, 9, 13, 15, 14, 8, 13, 6, 5, 12, 7, 5,
             11, 12, 14, 15, 14, 15, 9, 8, 9, 14, 5, 6, 8, 6, 5, 12,
             9, 15, 5, 11, 6, 8, 13, 12, 5, 12, 13, 14, 11, 8, 5, 6
         ];
-        var rmd160_s2 = [
+        const rmd160_s2 = [
             8, 9, 9, 11, 13, 15, 15, 5, 7, 7, 8, 11, 14, 14, 12, 6,
             9, 13, 15, 7, 12, 8, 9, 11, 7, 7, 12, 7, 6, 15, 13, 11,
             9, 7, 15, 11, 8, 6, 6, 14, 12, 13, 5, 14, 13, 13, 7, 5,
@@ -276,8 +292,8 @@ export class HashLib {
         * to work around bugs in some JS interpreters.
         */
         function safe_add(x, y) {
-            var lsw = (x & 0xFFFF) + (y & 0xFFFF);
-            var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+            const lsw = (x & 0xFFFF) + (y & 0xFFFF);
+            const msw = (x >> 16) + (y >> 16) + (lsw >> 16);
             return (msw << 16) | (lsw & 0xFFFF);
         }
         /*
@@ -290,16 +306,24 @@ export class HashLib {
         /* append padding */
         x[len >> 5] |= 0x80 << (len % 32);
         x[(((len + 64) >>> 9) << 4) + 14] = len;
-        var h0 = 0x67452301;
-        var h1 = 0xefcdab89;
-        var h2 = 0x98badcfe;
-        var h3 = 0x10325476;
-        var h4 = 0xc3d2e1f0;
-        for (var i = 0; i < x.length; i += 16) {
-            var T;
-            var A1 = h0, B1 = h1, C1 = h2, D1 = h3, E1 = h4;
-            var A2 = h0, B2 = h1, C2 = h2, D2 = h3, E2 = h4;
-            for (var j = 0; j <= 79; ++j) {
+        let h0 = 0x67452301;
+        let h1 = 0xefcdab89;
+        let h2 = 0x98badcfe;
+        let h3 = 0x10325476;
+        let h4 = 0xc3d2e1f0;
+        for (let i = 0; i < x.length; i += 16) {
+            let T;
+            let A1 = h0;
+            let B1 = h1;
+            let C1 = h2;
+            let D1 = h3;
+            let E1 = h4;
+            let A2 = h0;
+            let B2 = h1;
+            let C2 = h2;
+            let D2 = h3;
+            let E2 = h4;
+            for (let j = 0; j <= 79; ++j) {
                 T = safe_add(A1, rmd160_f(j, B1, C1, D1));
                 T = safe_add(T, x[i + rmd160_r1[j]]);
                 T = safe_add(T, rmd160_K1(j));
@@ -331,25 +355,54 @@ export class HashLib {
     /* Calculate the SHA-256 of an array of big-endian words, and a bit length. */
     binb_sha256(m, l) {
         function safe_add(x, y) {
-            var lsw = (x & 0xFFFF) + (y & 0xFFFF);
-            var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+            const lsw = (x & 0xFFFF) + (y & 0xFFFF);
+            const msw = (x >> 16) + (y >> 16) + (lsw >> 16);
             return (msw << 16) | (lsw & 0xFFFF);
         }
         /* sha256 support functions */
-        function sha256_S(X, n) { return (X >>> n) | (X << (32 - n)); }
-        function sha256_R(X, n) { return (X >>> n); }
-        function sha256_Ch(x, y, z) { return ((x & y) ^ ((~x) & z)); }
-        function sha256_Maj(x, y, z) { return ((x & y) ^ (x & z) ^ (y & z)); }
-        function sha256_Sigma0256(x) { return (sha256_S(x, 2) ^ sha256_S(x, 13) ^ sha256_S(x, 22)); }
-        function sha256_Sigma1256(x) { return (sha256_S(x, 6) ^ sha256_S(x, 11) ^ sha256_S(x, 25)); }
-        function sha256_Gamma0256(x) { return (sha256_S(x, 7) ^ sha256_S(x, 18) ^ sha256_R(x, 3)); }
-        function sha256_Gamma1256(x) { return (sha256_S(x, 17) ^ sha256_S(x, 19) ^ sha256_R(x, 10)); }
+        function sha256_S(X, n) {
+            return (X >>> n) | (X << (32 - n));
+        }
+        function sha256_R(X, n) {
+            return (X >>> n);
+        }
+        function sha256_Ch(x, y, z) {
+            return ((x & y) ^ ((~x) & z));
+        }
+        function sha256_Maj(x, y, z) {
+            return ((x & y) ^ (x & z) ^ (y & z));
+        }
+        function sha256_Sigma0256(x) {
+            return (sha256_S(x, 2) ^ sha256_S(x, 13) ^ sha256_S(x, 22));
+        }
+        function sha256_Sigma1256(x) {
+            return (sha256_S(x, 6) ^ sha256_S(x, 11) ^ sha256_S(x, 25));
+        }
+        function sha256_Gamma0256(x) {
+            return (sha256_S(x, 7) ^ sha256_S(x, 18) ^ sha256_R(x, 3));
+        }
+        function sha256_Gamma1256(x) {
+            return (sha256_S(x, 17) ^ sha256_S(x, 19) ^ sha256_R(x, 10));
+        }
         /* Main sha256 function */
-        var sha256_K = new Array(1116352408, 1899447441, -1245643825, -373957723, 961987163, 1508970993, -1841331548, -1424204075, -670586216, 310598401, 607225278, 1426881987, 1925078388, -2132889090, -1680079193, -1046744716, -459576895, -272742522, 264347078, 604807628, 770255983, 1249150122, 1555081692, 1996064986, -1740746414, -1473132947, -1341970488, -1084653625, -958395405, -710438585, 113926993, 338241895, 666307205, 773529912, 1294757372, 1396182291, 1695183700, 1986661051, -2117940946, -1838011259, -1564481375, -1474664885, -1035236496, -949202525, -778901479, -694614492, -200395387, 275423344, 430227734, 506948616, 659060556, 883997877, 958139571, 1322822218, 1537002063, 1747873779, 1955562222, 2024104815, -2067236844, -1933114872, -1866530822, -1538233109, -1090935817, -965641998);
-        var HASH = new Array(1779033703, -1150833019, 1013904242, -1521486534, 1359893119, -1694144372, 528734635, 1541459225);
-        var W = new Array(64);
-        var a, b, c, d, e, f, g, h;
-        var i, j, T1, T2;
+        const sha256_K = [
+            1116352408, 1899447441, -1245643825, -373957723, 961987163, 1508970993,
+            -1841331548, -1424204075, -670586216, 310598401, 607225278, 1426881987,
+            1925078388, -2132889090, -1680079193, -1046744716, -459576895, -272742522,
+            264347078, 604807628, 770255983, 1249150122, 1555081692, 1996064986,
+            -1740746414, -1473132947, -1341970488, -1084653625, -958395405, -710438585,
+            113926993, 338241895, 666307205, 773529912, 1294757372, 1396182291,
+            1695183700, 1986661051, -2117940946, -1838011259, -1564481375, -1474664885,
+            -1035236496, -949202525, -778901479, -694614492, -200395387, 275423344,
+            430227734, 506948616, 659060556, 883997877, 958139571, 1322822218,
+            1537002063, 1747873779, 1955562222, 2024104815, -2067236844, -1933114872,
+            -1866530822, -1538233109, -1090935817, -965641998
+        ];
+        const HASH = [1779033703, -1150833019, 1013904242, -1521486534,
+            1359893119, -1694144372, 528734635, 1541459225];
+        const W = [64];
+        let a, b, c, d, e, f, g, h;
+        let i, j, T1, T2;
         /* append padding */
         m[l >> 5] |= 0x80 << (24 - l % 32);
         m[((l + 64 >> 9) << 4) + 15] = l;

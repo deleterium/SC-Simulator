@@ -1,11 +1,11 @@
 // Author: Rui Deleterium
 // Project: https://github.com/deleterium/SC-Simulator
 // License: BSD 3-Clause License
-import { Constants, Blockchain, } from './index.js';
+import { Constants, Blockchain } from './index.js';
 import { utils } from './utils.js';
 import { CPU } from './cpu.js';
 export class CONTRACT {
-    constructor(asm_sourcecode) {
+    constructor(asmSourceCode) {
         this.instructionPointer = 0;
         this.sleepUntilBlock = 0;
         this.previousBalance = 0n;
@@ -25,32 +25,33 @@ export class CONTRACT {
         this.UserStack = [];
         this.CodeStack = [];
         this.enqueuedTX = [];
-        this.exception = "";
+        this.exception = '';
         this.A = [0n, 0n, 0n, 0n];
         this.B = [0n, 0n, 0n, 0n];
         this.PCS = 0;
         this.ERR = null;
-        this.sourceCode = asm_sourcecode.split("\n");
-        CPU.cpu_deploy(this);
-        while (Blockchain.accounts.find(acc => acc.id == this.contract) !== undefined) {
+        this.sourceCode = asmSourceCode.split('\n');
+        CPU.cpuDeploy(this);
+        while (Blockchain.accounts.find(acc => acc.id === this.contract) !== undefined) {
             this.contract++;
         }
     }
     run(bps = []) {
-        var bp = null;
-        var retCode = this.checkState();
-        if (retCode !== "") {
+        let bp = null;
+        const retCode = this.checkState();
+        if (retCode !== '') {
             return retCode;
         }
         do {
             if (CPU.cpu(this) === null) {
                 this.dead = true;
-                this.exception = "Unknow instruction or End of file reached";
-                return "ERROR: Unknow instruction or End of file reached";
+                this.exception = 'Unknow instruction or End of file reached';
+                return 'ERROR: Unknow instruction or End of file reached';
             }
             bps.forEach(bpline => {
-                if (this.instructionPointer == bpline)
+                if (this.instructionPointer === bpline) {
                     bp = bpline;
+                }
             });
         } while (this.stopped === false &&
             this.finished === false &&
@@ -58,10 +59,10 @@ export class CONTRACT {
             this.frozen === false &&
             bp === null);
         if (bp !== null) {
-            return "Stopped on breakpoint " + bp + ".";
+            return `Stopped on breakpoint ${bp}.`;
         }
         else {
-            return "Run end. Check status. Forge new block to continue.";
+            return 'Run end. Check status. Forge new block to continue.';
         }
     }
     /**
@@ -70,43 +71,43 @@ export class CONTRACT {
      * @return string indicating error/status. Empty string on success.
      */
     step(bps = []) {
-        var cpu_exit;
-        var bp = null;
-        var retCode = this.checkState();
-        if (retCode !== "") {
+        let cpuExitCode;
+        let bp = null;
+        const retCode = this.checkState();
+        if (retCode !== '') {
             return retCode;
         }
         do {
-            cpu_exit = CPU.cpu(this);
-        } while (cpu_exit === false);
-        if (cpu_exit === null) {
+            cpuExitCode = CPU.cpu(this);
+        } while (cpuExitCode === false);
+        if (cpuExitCode === null) {
             this.dead = true;
-            this.exception = "Unknow instruction or End of file reached";
-            return "ERROR: Unknow instruction or End of file reached";
+            this.exception = 'Unknow instruction or End of file reached';
+            return 'ERROR: Unknow instruction or End of file reached';
         }
         bps.forEach(bpline => {
-            if (this.instructionPointer == bpline) {
+            if (this.instructionPointer === bpline) {
                 bp = bpline;
             }
         });
         if (bp !== null) {
-            return "Reached breakpoint " + bp + ".";
+            return `Reached breakpoint ${bp}.`;
         }
-        return "";
+        return '';
     }
     // Verifies if contract can be run
     checkState() {
         if (this.sleepUntilBlock > Blockchain.currentBlock) {
-            return "Contract sleeping!";
+            return 'Contract sleeping!';
         }
         if (this.dead === true ||
             this.stopped === true ||
             this.frozen === true ||
             this.finished === true ||
             this.instructionPointer === null) {
-            return "Contract execution done on this round";
+            return 'Contract execution done on this round';
         }
-        return "";
+        return '';
     }
     isPendingExecution() {
         if (this.frozen === false &&
@@ -125,7 +126,7 @@ export class CONTRACT {
         if (this.sleepUntilBlock > Blockchain.currentBlock) {
             return;
         }
-        else if (this.sleepUntilBlock == Blockchain.currentBlock) {
+        else if (this.sleepUntilBlock === Blockchain.currentBlock) {
             this.stopped = false;
             this.frozen = false;
             this.finished = false;
@@ -133,9 +134,9 @@ export class CONTRACT {
             return;
         }
         // find new incoming tx
-        let incomingTX = Blockchain.transactions.find(TX => TX.recipient == this.contract
-            && TX.processed == false
-            && TX.amount >= this.activationAmount);
+        const incomingTX = Blockchain.transactions.find(TX => TX.recipient === this.contract &&
+            TX.processed === false &&
+            TX.amount >= this.activationAmount);
         if (incomingTX !== undefined) {
             this.stopped = false;
             this.frozen = false;
@@ -144,8 +145,8 @@ export class CONTRACT {
             incomingTX.processed = true;
             return;
         }
-        if (this.activationAmount == 0n) {
-            //SmartContracts with zero activation amount never stop
+        if (this.activationAmount === 0n) {
+            // SmartContracts with zero activation amount never stop
             this.stopped = false;
             this.frozen = false;
             this.finished = false;
@@ -158,7 +159,7 @@ export class CONTRACT {
      */
     dispatchEnqueuedTX() {
         this.enqueuedTX.forEach(tx => {
-            let recaccount = Blockchain.accounts.find(obj => obj.id == tx.recipient);
+            const recaccount = Blockchain.accounts.find(obj => obj.id === tx.recipient);
             if (recaccount === undefined) {
                 Blockchain.accounts.push({ id: tx.recipient, balance: tx.amount });
             }
@@ -166,7 +167,7 @@ export class CONTRACT {
                 recaccount.balance += tx.amount;
             }
             Blockchain.txHeight++;
-            let messageHex = utils.messagearray2hexstring(tx.messageArr);
+            const messageHex = utils.messagearray2hexstring(tx.messageArr);
             Blockchain.transactions.push({
                 sender: this.contract,
                 recipient: tx.recipient,
@@ -177,7 +178,7 @@ export class CONTRACT {
                 messageArr: tx.messageArr,
                 processed: false,
                 messageHex: messageHex,
-                messageText: utils.hexstring2string(messageHex),
+                messageText: utils.hexstring2string(messageHex)
             });
         });
         this.enqueuedTX = [];
@@ -192,12 +193,11 @@ export class CONTRACT {
      *  to trigger dead state on next execution try.
      */
     getNextInstructionLine(line = this.instructionPointer + 1) {
-        let instr;
         for (; line < this.sourceCode.length; line++) {
-            instr = this.sourceCode[line];
-            if (/^\s*$/.exec(instr) !== null
-                || /^\s*(\w+):\s*$/.exec(instr) !== null
-                || /^\s*\^.*/.exec(instr) !== null) {
+            const instr = this.sourceCode[line];
+            if (/^\s*$/.exec(instr) !== null ||
+                /^\s*(\w+):\s*$/.exec(instr) !== null ||
+                /^\s*\^.*/.exec(instr) !== null) {
                 continue;
             }
             break;

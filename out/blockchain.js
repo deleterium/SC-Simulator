@@ -14,28 +14,27 @@ export class BLOCKCHAIN {
      */
     addTransactions(TXarray) {
         TXarray.forEach(curTX => {
-            if (curTX.blockheight != this.currentBlock) {
+            if (curTX.blockheight !== this.currentBlock) {
                 return;
             }
-            //Process balance for sender account
+            // Process balance for sender account
             this.addBalanceTo(curTX.sender, -curTX.amount);
-            //Process balance for recipient account
+            // Process balance for recipient account
             this.addBalanceTo(curTX.recipient, curTX.amount);
-            //Calculate timestamp
+            // Calculate timestamp
             this.txHeight++;
-            let timestamp = (BigInt(curTX.blockheight) << 32n) + this.txHeight;
-            //Create urandom txid
-            let txid = utils.getRandom64bit();
-            //Process message payload to messageArr
-            let txhexstring = "";
+            const timestamp = (BigInt(curTX.blockheight) << 32n) + this.txHeight;
+            // Create urandom txid
+            const txid = utils.getRandom64bit();
+            // Process message payload to messageArr
+            let txhexstring = '';
             if (curTX.messageText !== undefined) {
                 txhexstring = utils.string2hexstring(curTX.messageText);
             }
             else if (curTX.messageHex !== undefined) {
                 txhexstring = curTX.messageHex;
             }
-            let messageArr = 
-            //pushes new TX object to blockchain array
+            // pushes new TX object to blockchain array
             this.transactions.push({
                 sender: curTX.sender,
                 recipient: curTX.recipient,
@@ -46,7 +45,7 @@ export class BLOCKCHAIN {
                 processed: false,
                 messageArr: utils.hexstring2messagearray(txhexstring),
                 messageText: curTX.messageText,
-                messageHex: curTX.messageHex,
+                messageHex: curTX.messageHex
             });
         });
     }
@@ -58,7 +57,7 @@ export class BLOCKCHAIN {
      * @param amount BigInt Amount to be added (can be negative)
      */
     addBalanceTo(account, amount) {
-        let foundAccount = this.accounts.find(obj => obj.id == account);
+        const foundAccount = this.accounts.find(obj => obj.id === account);
         if (foundAccount === undefined) {
             this.accounts.push({ id: account, balance: amount });
         }
@@ -72,9 +71,9 @@ export class BLOCKCHAIN {
      * @returns account found or one newly created
      */
     getAccountFromId(id) {
-        let Acc = this.accounts.find(acc => acc.id == id);
+        const Acc = this.accounts.find(acc => acc.id === id);
         if (Acc === undefined) {
-            let newitem = this.accounts.push({ id: id, balance: 0n });
+            const newitem = this.accounts.push({ id: id, balance: 0n });
             return this.accounts[newitem - 1];
         }
         return Acc;
@@ -85,7 +84,7 @@ export class BLOCKCHAIN {
      * @returns Its balance. If account does not exists, it is NOT created
      */
     getBalanceFrom(id) {
-        let Acc = this.accounts.find(acc => acc.id == id);
+        const Acc = this.accounts.find(acc => acc.id === id);
         if (Acc === undefined)
             return 0n;
         else
@@ -97,12 +96,12 @@ export class BLOCKCHAIN {
      * @returns The BlockchainTransactionObj or undefined if no one found
      */
     getTxFrom(txid) {
-        return this.transactions.find(TX => TX.txid == txid);
+        return this.transactions.find(TX => TX.txid === txid);
     }
     getTxAfterTimestamp(tstamp, accoundId, minAmount) {
-        return this.transactions.find(TX => TX.recipient == accoundId
-            && TX.timestamp > tstamp && TX.amount >= minAmount
-            && TX.blockheight < this.currentBlock);
+        return this.transactions.find(TX => TX.recipient === accoundId &&
+            TX.timestamp > tstamp && TX.amount >= minAmount &&
+            TX.blockheight < this.currentBlock);
     }
     /**
      * Update states for a new block

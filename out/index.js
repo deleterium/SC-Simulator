@@ -13,10 +13,10 @@ export const Constants = {
     contractUSPages: 1,
     contractCSPages: 1,
     getRandomSleepBlocks: 15,
-    //do not change these
+    // do not change these
     minus1: 18446744073709551615n,
-    pow2to64: 18446744073709551616n, // 2^64
+    pow2to64: 18446744073709551616n // 2^64
 };
-export var Blockchain = new BLOCKCHAIN();
-export var Contracts = [];
-export var Simulator = new SIMULATOR();
+export const Blockchain = new BLOCKCHAIN();
+export const Contracts = [];
+export const Simulator = new SIMULATOR();
