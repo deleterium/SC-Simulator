@@ -135,8 +135,7 @@ export class CONTRACT {
         // find new incoming tx
         let incomingTX = Blockchain.transactions.find(TX => TX.recipient == this.contract
             && TX.processed == false
-            && TX.amount >= this.activationAmount
-            && TX.blockheight < Blockchain.currentBlock);
+            && TX.amount >= this.activationAmount);
         if (incomingTX !== undefined) {
             this.stopped = false;
             this.frozen = false;

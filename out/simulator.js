@@ -53,14 +53,26 @@ export class SIMULATOR {
         let rcString = "";
         rcString = this.parseUpcomingTransactions(nextTXs);
         if (rcString !== "") {
+            // Avoid any execution if object is malformed
             return rcString;
         }
+        // Runs all contracts for current blockheight
         Contracts.forEach(curContract => {
             curContract.run();
             curContract.dispatchEnqueuedTX();
         });
-        Blockchain.forgeBlock();
+        // Includes user transactions in blockchain. So they were not processed by contracts
+        //  at this height.
         Blockchain.addTransactions(this.UpcomingTransactions);
+        // This actually increases blockheigth count.
+        Blockchain.forgeBlock();
+        /*
+                // Includes transaction from smart contracts executed in block N at blockheight N + 1
+                Contracts.forEach( curContract => {
+                    curContract.dispatchEnqueuedTX()
+                })
+         */
+        // Checks and activates contracts at this blockheight
         Contracts.forEach(curContract => {
             curContract.forgeBlock();
         });
