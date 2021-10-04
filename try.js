@@ -40,6 +40,16 @@ window.onload = function () {
     document.getElementById('blockchain_legend').addEventListener('click', detachBlockchain)
     document.getElementById('transaction_legend').addEventListener('click', detachTransaction)
 
+    // Buttons to default
+    document.getElementById('step').disabled = true
+    document.getElementById('togSource').disabled = false
+    document.getElementById('forge').disabled = true
+    document.getElementById('run').disabled = true
+    document.getElementById('autostep').disabled = true
+    document.getElementById('addbp').disabled = true
+    document.getElementById('loadExample').disabled = false
+    document.getElementById('loadSlot').disabled = true
+
     textKeyUp()
 }
 
@@ -167,6 +177,13 @@ function setColorSource () {
     colorDOM.innerHTML = AsmHighlight.toHTML(Contracts[Simulator.currSlotContract].sourceCode.join('\n'))
     sourceDOM.style.display = 'none'
     colorDOM.style.display = 'block'
+    document.getElementById('deploy').disabled = true
+    document.getElementById('forge').disabled = false
+    document.getElementById('run').disabled = false
+    document.getElementById('autostep').disabled = false
+    document.getElementById('step').disabled = false
+    document.getElementById('addbp').disabled = false
+
     let collection = document.getElementsByClassName('asmVariable')
     for (let i = 0; i < collection.length; i++) {
         collection[i].addEventListener('mouseover', showInspector)
@@ -206,6 +223,13 @@ function setSourceCode () {
     colorDOM.innerHTML = ''
     colorDOM.style.display = 'none'
     sourceDOM.style.display = 'block'
+    document.getElementById('deploy').disabled = false
+    document.getElementById('forge').disabled = true
+    document.getElementById('run').disabled = true
+    document.getElementById('autostep').disabled = true
+    document.getElementById('step').disabled = true
+    document.getElementById('addbp').disabled = true
+
     sourceDOM.value = Contracts[Simulator.currSlotContract].sourceCode.join('\n')
     inform('You can edit/change source code.')
     textKeyUp()
@@ -250,6 +274,11 @@ function deploy () {
     }
     Simulator.deploy(source)
     inform('Contract id ' + Contracts[Contracts.length - 1].contract.toString(10) + ' deployed on slot ' + (Contracts.length - 1) + '. Ready to run')
+
+    if (Contracts.length > 1) {
+        document.getElementById('loadSlot').disabled = false
+    }
+    document.getElementById('loadExample').disabled = true
 }
 
 // Handles apearing/hiding inspector floating div and update its contents (for variables/numbers)
