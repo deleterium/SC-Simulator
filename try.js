@@ -22,7 +22,7 @@ window.onload = function () {
     scode.addEventListener('keydown', textKeyUp)
     scode.addEventListener('click', textKeyUp)
     scode.addEventListener('mouseup', textKeyUp)
-    scode.addEventListener('paste', textKeyUp)
+    scode.addEventListener('paste', pasteEvent)
 
     document.getElementById('step').addEventListener('click', stepContract)
     document.getElementById('forge').addEventListener('click', forgeBlock)
@@ -40,6 +40,21 @@ window.onload = function () {
     document.getElementById('blockchain_legend').addEventListener('click', detachBlockchain)
     document.getElementById('transaction_legend').addEventListener('click', detachTransaction)
 
+    textKeyUp()
+}
+
+// Event handler to be used only in first paste
+function pasteEvent (e) {
+    if (e.target.value !== '') {
+        // Disregard this function
+        return
+    }
+    // add 'pasted:' to pasted text
+    const paste = (e.clipboardData || window.clipboardData).getData('text')
+    e.target.value = paste
+    // stop default paste
+    e.preventDefault()
+    // Update textarea height
     textKeyUp()
 }
 
