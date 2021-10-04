@@ -90,7 +90,7 @@ function clickBreakpoint () {
     if (linediv === undefined) {
         return
     }
-    const result = Simulator.toggleBreakpoint(newbp)
+    const result = Simulator.toggleBreakpoint(Number(newbp))
     if (result === 'ADDED') {
         linediv.className += ' breakpoint'
         inform('Breakpoint ' + newbp + ' added')
@@ -187,6 +187,14 @@ function setColorSource () {
         collection[i].addEventListener('click', clickBreakpoint)
     }
     updatePage()
+
+    Simulator.getBreakpoints().forEach(bpLine => {
+        const linediv = document.getElementById('codeline' + bpLine)
+        if (linediv === undefined) {
+            return
+        }
+        linediv.className += ' breakpoint'
+    })
 }
 function setSourceCode () {
     const sourceDOM = document.getElementById('source-code')
@@ -228,6 +236,7 @@ function loadSlot () {
         return
     }
     Simulator.currSlotContract = slot
+    Simulator.clearAllBreakpoints()
     setColorSource()
 }
 

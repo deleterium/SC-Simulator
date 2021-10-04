@@ -1,4 +1,4 @@
-import { Contracts, Blockchain, Simulator, Constants } from './index.js';
+import { Contracts, Blockchain, Constants } from './index.js';
 import { CONTRACT } from './contract.js';
 export class SIMULATOR {
     constructor() {
@@ -96,13 +96,25 @@ export class SIMULATOR {
         }
     }
     /**
+     * Clear all breakpoints
+     */
+    clearAllBreakpoints() {
+        this.breakpoints = [];
+    }
+    /**
+     * Get breakpoints
+     */
+    getBreakpoints() {
+        return this.breakpoints;
+    }
+    /**
      * Runs contract currently debuggable
      */
     runSlotContract() {
         if (this.currSlotContract === undefined) {
             return 'Deploy contract before run...';
         }
-        return Contracts[this.currSlotContract].run(Simulator.breakpoints);
+        return Contracts[this.currSlotContract].run(this.breakpoints);
     }
     /**
      * Steps contract currently debuggable
@@ -111,7 +123,7 @@ export class SIMULATOR {
         if (this.currSlotContract === undefined) {
             return 'Deploy contract before step...';
         }
-        return Contracts[this.currSlotContract].step();
+        return Contracts[this.currSlotContract].step(this.breakpoints);
     }
     /**
      *
@@ -131,6 +143,7 @@ export class SIMULATOR {
         Blockchain.addBalanceTo(newContract.contract, Constants.deploy_add_balance);
         newContract.forgeBlock();
         this.updateLastMemoryValues();
+        this.clearAllBreakpoints();
     }
     updateLastMemoryValues() {
         if (this.currSlotContract === undefined) {
