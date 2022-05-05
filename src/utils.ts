@@ -59,7 +59,7 @@ export class utils {
             inSuperRegister += (1n << 256n)
         }
         for (let i = 0; i < 4; i++) {
-            ret.push(inSuperRegister % 18446744073709551616n)
+            ret[i] = inSuperRegister % 18446744073709551616n
             inSuperRegister >>= 64n
         }
         return ret
