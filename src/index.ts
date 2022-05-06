@@ -8,8 +8,8 @@ import { SIMULATOR } from './simulator.js'
 import { CONTRACT } from './contract.js'
 
 export const Constants = {
-    stepfee: 73500n, // default value from signum: 73500n
-    deploy_add_balance: 200000000n, // added balance to contract when deploying it
+    stepfee: 100000n, // default value from signum: 73500n
+    deploy_add_balance: 300000000n, // added balance to contract when deploying it
     activationAmount: 10000000n, // contract activation amount
     creatorID: 555n, // Account ID of creator
     contractID: 999n, // Account ID of contract
