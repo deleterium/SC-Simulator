@@ -782,6 +782,21 @@ export class CPU {
             }
         },
         {
+            name: 'SLP_IMD',
+            stepFee: 1n,
+            regex: /^\s*SLP\s*$/,
+            execute (ContractState, regexParts) {
+                ContractState.frozen = false
+                ContractState.running = false
+                ContractState.stopped = true
+                ContractState.finished = false
+                ContractState.previousBalance = Blockchain.getBalanceFrom(ContractState.contract)
+                ContractState.sleepUntilBlock = Blockchain.currentBlock + 1
+                ContractState.instructionPointer = ContractState.getNextInstructionLine()
+                return true
+            }
+        },
+        {
             name: 'FIZ_DAT',
             stepFee: 1n,
             regex: /^\s*FIZ\s+\$(\w+)\s*$/,
@@ -884,6 +899,39 @@ export class CPU {
             execute (ContractState, regexParts) {
                 ContractState.instructionPointer = ContractState.getNextInstructionLine()
                 ContractState.PCS = ContractState.instructionPointer
+                return true
+            }
+        },
+        {
+            name: 'MDV_DAT',
+            stepFee: 1n,
+            regex: /^\s*MDV\s+@(\w+)\s+\$(\w+)\s+\$(\w+)\s*$/,
+            execute (ContractState, regexParts) {
+                const variable1 = ContractState.Memory.find(mem => mem.varName === regexParts[1])
+                const variable2 = ContractState.Memory.find(mem => mem.varName === regexParts[2])
+                const variable3 = ContractState.Memory.find(mem => mem.varName === regexParts[3])
+                let val1: bigint, val2: bigint, val3: bigint, result: bigint
+                if (variable1 === undefined) val1 = 0n
+                else val1 = utils.unsigned2signed(variable1.value)
+                if (variable2 === undefined) val2 = 0n
+                else val2 = utils.unsigned2signed(variable2.value)
+                if (variable3 === undefined) val3 = 0n
+                else val3 = utils.unsigned2signed(variable3.value)
+
+                if (val3 === 0n) {
+                    result = 0n
+                } else {
+                    const bigVal = (val1 * val2) / val3
+                    // Converting to 64-bit long
+                    result = bigVal & Constants.minus1
+                }
+                if (variable1 === undefined) {
+                    ContractState.Memory.push({ varName: regexParts[1], value: result })
+                } else {
+                    variable1.value = result
+                }
+
+                ContractState.instructionPointer = ContractState.getNextInstructionLine()
                 return true
             }
         },
