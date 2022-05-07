@@ -24,12 +24,19 @@ export class utils {
     }
 
     static hexstring2messagearray (inHexStr: string): bigint[] {
-        inHexStr = inHexStr.padEnd(64, '0')
-        const ret = [0n, 0n, 0n, 0n]
+        if (inHexStr.length % 16 !== 0) {
+            inHexStr = inHexStr.padEnd(Math.trunc((inHexStr.length / 16) + 1) * 16, '0')
+        }
+        const ret:bigint[] = []
         let base = 1n
-        for (let i = 0n; i < 64n; i += 2n) {
-            if (i % 16n === 0n) base = 1n
-            else base *= 256n
+        const totalLength = BigInt(inHexStr.length)
+        for (let i = 0n; i < totalLength; i += 2n) {
+            if (i % 16n === 0n) {
+                base = 1n
+                ret.push(0n)
+            } else {
+                base *= 256n
+            }
             ret[Number(i / 16n)] += BigInt(Number('0x' + inHexStr.slice(Number(i), Number(i + 2n)))) * base
         }
         return ret
@@ -37,7 +44,7 @@ export class utils {
 
     static messagearray2hexstring (inArray: bigint[]): string {
         let ret = ''; let val
-        for (let i = 0n; i < 32n; i++) {
+        for (let i = 0n; i < inArray.length * 8; i++) {
             val = (inArray[Number(i / 8n)] >> ((i % 8n) * 8n)) & 0xffn
             ret += val.toString(16).padStart(2, '0')
         }
@@ -129,7 +136,7 @@ export class utils {
         for (j = 0; j < byarr.length; j++) {
             ret += byarr[j].toString(16).padStart(2, '0')
         }
-        return (ret.padEnd(64, '0'))
+        return ret
     }
 
     static hexstring2string (inHexStr: string) {

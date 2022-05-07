@@ -16,12 +16,12 @@ import { CPU } from './cpu.js'
  * Object for transactions created by smart contracts
  *  @member {bigint} recipient
  *  @member {bigint} amount
- *  @member {bigint[4]} messageArr
+ *  @member {bigint[]} messageArr
  */
 interface ContractTransactionObj {
     recipient: bigint
     amount: bigint
-    messageArr: [ bigint, bigint, bigint, bigint ]
+    messageArr: bigint[]
 }
 
 export class CONTRACT {

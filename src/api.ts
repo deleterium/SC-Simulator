@@ -279,7 +279,15 @@ export class API_MICROCODE {
                     ContractState.B = [0n, 0n, 0n, 0n]
                     return
                 }
-                ContractState.B = [tx.messageArr[0], tx.messageArr[1], tx.messageArr[2], tx.messageArr[3]]
+                const page = ContractState.A[1]
+                const start = Number(page * 4n)
+                for (let i = 0; i < 4; i++) {
+                    if (tx.messageArr[start + i] === undefined) {
+                        ContractState.B[i] = 0n
+                    } else {
+                        ContractState.B[i] = tx.messageArr[start + i]
+                    }
+                }
             }
         },
         {
@@ -351,7 +359,10 @@ export class API_MICROCODE {
                 const tx = ContractState.enqueuedTX.find(TX => TX.recipient === ContractState.B[0])
 
                 if (tx !== undefined) {
-                    tx.messageArr = [ContractState.A[0], ContractState.A[1], ContractState.A[2], ContractState.A[3]]
+                    if (tx.messageArr.length === 31 * 4) {
+                        tx.messageArr = []
+                    }
+                    tx.messageArr.push(ContractState.A[0], ContractState.A[1], ContractState.A[2], ContractState.A[3])
                     return
                 }
                 ContractState.enqueuedTX.push({

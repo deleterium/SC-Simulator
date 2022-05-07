@@ -41,10 +41,10 @@ export class SIMULATOR {
             this.UpcomingTransactions = JSON.parse(JSONobj, (key, value) => {
                 if (typeof value === 'string') {
                     if (/^[\d_]+n$/.test(value)) {
-                        return BigInt(value.substr(0, value.length - 1).replace(/_/g, ''))
+                        return BigInt(value.slice(0, -1).replace(/_/g, ''))
                     }
                     if (/^0[xX][\da-fA-F_]+n$/.test(value)) {
-                        return BigInt(value.substr(0, value.length - 1).replace(/_/g, ''))
+                        return BigInt(value.slice(0, -1).replace(/_/g, ''))
                     }
                     if (key === 'blockheight') {
                         return Number(value)
