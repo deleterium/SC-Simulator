@@ -476,6 +476,8 @@ function updatePage () {
     // Blockchain status
     document.getElementById('blockchain_output').innerHTML = 'Registered accounts = ' +
         JSON.stringify(Blockchain.accounts, stringifyReplacer, '   ') +
+        '<br><br>Registered maps = ' +
+        JSON.stringify(Blockchain.maps, stringifyReplacer, '   ') +
         '<br><br>Registered transactions = ' +
         JSON.stringify(Blockchain.transactions, stringifyReplacer, '   ') +
         '<br><br>Current blockheight = ' +

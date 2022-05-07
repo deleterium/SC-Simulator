@@ -732,17 +732,19 @@ export class API_MICROCODE {
             funName: 'Get_Map_Value_Keys_In_A',
             opCode: 0x35,
             execute (ContractState) {
+                let targetMap = ContractState.map
                 if (ContractState.A[2] !== 0n) {
-                    // read map from other contracts not implemented
-                    ContractState.dead = true
-                    ContractState.exception = 'Get_Map_Value_Keys_In_A: Read map from other contracts is not implemented'
+                    const contractMap = Blockchain.maps.find(obj => obj.id === ContractState.A[2])
+                    if (contractMap === undefined) {
+                        return 0n
+                    }
+                    targetMap = contractMap.map
+                }
+                const found = targetMap.find(Obj => Obj.k1 === ContractState.A[0] && Obj.k2 === ContractState.A[1])
+                if (found === undefined) {
                     return 0n
                 }
-                const found = ContractState.map.filter(Obj => Obj.k1 === ContractState.A[0] && Obj.k2 === ContractState.A[1])
-                if (found.length === 0) {
-                    return 0n
-                }
-                return found[0].value
+                return found.value
             }
         }
     ]

@@ -190,4 +190,26 @@ export class utils {
             }
         } while (true)
     }
+
+    // Note: Found at https://gist.github.com/sunnyy02/2477458d4d1c08bde8cc06cd8f56702e
+    // https://javascript.plainenglish.io/deep-clone-an-object-and-preserve-its-type-with-typescript-d488c35e5574
+    /**
+     * Create a deep copy of one variable.
+     */
+    static deepCopy<T1> (source: T1): T1 {
+        if (Array.isArray(source)) {
+            return source.map(item => this.deepCopy(item)) as unknown as T1
+        }
+        if (source instanceof Date) {
+            return new Date(source.getTime()) as unknown as T1
+        }
+        if (source && typeof source === 'object') {
+            return Object.getOwnPropertyNames(source).reduce((o, prop) => {
+                Object.defineProperty(o, prop, Object.getOwnPropertyDescriptor(source, prop)!)
+                o[prop] = this.deepCopy((source as { [key: string]: any })[prop])
+                return o
+            }, Object.create(Object.getPrototypeOf(source)))
+        }
+        return source
+    }
 }

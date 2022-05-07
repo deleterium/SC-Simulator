@@ -82,6 +82,7 @@ export class SIMULATOR {
         Contracts.forEach(curContract => {
             curContract.run()
             curContract.dispatchEnqueuedTX()
+            curContract.saveMapOnBlockchain()
         })
         // Includes user transactions in blockchain. So they were not processed by contracts
         //  at this height.

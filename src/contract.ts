@@ -266,4 +266,16 @@ export class CONTRACT {
         }
         return line
     }
+
+    saveMapOnBlockchain () {
+        const oldValues = Blockchain.maps.find(obj => obj.id === this.contract)
+        if (oldValues === undefined) {
+            Blockchain.maps.push({
+                id: this.contract,
+                map: utils.deepCopy(this.map)
+            })
+            return
+        }
+        oldValues.map = utils.deepCopy(this.map)
+    }
 }

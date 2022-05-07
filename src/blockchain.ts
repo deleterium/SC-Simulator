@@ -1,7 +1,7 @@
 
 import { utils } from './utils.js'
 
-import { UserTransactionObj } from './objTypes.js'
+import { MapObj, UserTransactionObj } from './objTypes.js'
 
 /**
  * Object for accounts stored in blockchain
@@ -12,6 +12,17 @@ import { UserTransactionObj } from './objTypes.js'
 interface AccountObj {
     id: bigint
     balance: bigint
+}
+
+/**
+* Object for maps stored in blockchain
+*
+* @member {bigint} id Account ID (64-bit unsigned)
+* @member {bigint} balance Account current balance (can be negative)
+*/
+interface BlockchainMapObj {
+   id: bigint
+   map: MapObj[]
 }
 
 /**
@@ -45,12 +56,14 @@ export class BLOCKCHAIN {
     currentBlock: number
     accounts: AccountObj[]
     transactions: BlockchainTransactionObj[]
+    maps: BlockchainMapObj[]
 
     constructor () {
         this.txHeight = 0n
         this.currentBlock = 1
         this.accounts = []
         this.transactions = []
+        this.maps = []
     }
 
     /**
