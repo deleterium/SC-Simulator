@@ -9,7 +9,7 @@ import {
 
 import { utils } from './utils.js'
 
-import { MemoryObj } from './objTypes.js'
+import { MapObj, MemoryObj } from './objTypes.js'
 import { CPU } from './cpu.js'
 
 /**
@@ -47,6 +47,7 @@ export class CONTRACT {
     exception: string
     A: [ bigint, bigint, bigint, bigint ]
     B: [ bigint, bigint, bigint, bigint ]
+    map: MapObj[]
     PCS: number
     ERR: number | null
     sourceCode: string[]
@@ -74,6 +75,7 @@ export class CONTRACT {
         this.exception = ''
         this.A = [0n, 0n, 0n, 0n]
         this.B = [0n, 0n, 0n, 0n]
+        this.map = []
         this.PCS = 0
         this.ERR = null
         this.sourceCode = asmSourceCode.split('\n')

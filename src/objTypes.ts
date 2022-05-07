@@ -15,6 +15,19 @@ export interface MemoryObj {
 }
 
 /**
+ * Object for contract map
+ *
+ * @member {bigint} k1 key 1 (64-bit unsigned)
+ * @member {bigint} k2 key 2 (64-bit unsigned)
+ * @member {bigint} value Variable value (64-bit unsigned)
+ */
+export interface MapObj {
+    k1: bigint
+    k2: bigint
+    value: bigint
+}
+
+/**
  * Object for transactions created by user
  *  @member {bigint} sender
  *  @member {bigint} recipient

@@ -360,6 +360,22 @@ export class API_MICROCODE {
                     messageArr: [ContractState.A[0], ContractState.A[1], ContractState.A[2], ContractState.A[3]]
                 })
             }
+        },
+        {
+            funName: 'Set_Map_Value_Keys_In_A',
+            opCode: 0x32,
+            execute (ContractState) {
+                const found = ContractState.map.filter(Obj => Obj.k1 === ContractState.A[0] && Obj.k2 === ContractState.A[1])
+                if (found.length === 0) {
+                    ContractState.map.push({
+                        k1: ContractState.A[0],
+                        k2: ContractState.A[1],
+                        value: ContractState.A[3]
+                    })
+                    return
+                }
+                found[0].value = ContractState.A[3]
+            }
         }
     ]
 
@@ -710,6 +726,23 @@ export class API_MICROCODE {
             opCode: 0x35,
             execute (ContractState) {
                 return ContractState.previousBalance
+            }
+        },
+        {
+            funName: 'Get_Map_Value_Keys_In_A',
+            opCode: 0x35,
+            execute (ContractState) {
+                if (ContractState.A[2] !== 0n) {
+                    // read map from other contracts not implemented
+                    ContractState.dead = true
+                    ContractState.exception = 'Get_Map_Value_Keys_In_A: Read map from other contracts is not implemented'
+                    return 0n
+                }
+                const found = ContractState.map.filter(Obj => Obj.k1 === ContractState.A[0] && Obj.k2 === ContractState.A[1])
+                if (found.length === 0) {
+                    return 0n
+                }
+                return found[0].value
             }
         }
     ]
