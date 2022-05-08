@@ -2,7 +2,7 @@
 // Project: https://github.com/deleterium/SC-Simulator
 // License: BSD 3-Clause License
 
-import { Blockchain, Constants } from './index.js'
+import { Blockchain, Constants, Contracts } from './index.js'
 import { CONTRACT } from './contract.js'
 import { HashLib } from './hashlib.js'
 import { utils } from './utils.js'
@@ -737,6 +737,21 @@ export class API_MICROCODE {
             opCode: 0x35,
             execute (ContractState) {
                 return ContractState.previousBalance
+            }
+        },
+        {
+            funName: 'Get_Code_Hash_Id',
+            opCode: 0x35,
+            execute (ContractState) {
+                const atId = ContractState.B[1]
+                if (atId === 0n || atId === ContractState.contract) {
+                    return ContractState.codeHashId
+                }
+                const foundContract = Contracts.find(Obj => Obj.contract === atId)
+                if (foundContract === undefined) {
+                    return 0n
+                }
+                return foundContract.codeHashId
             }
         },
         {

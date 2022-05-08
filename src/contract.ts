@@ -36,6 +36,7 @@ export class CONTRACT {
     activationAmount: bigint
     creator: bigint
     contract: bigint
+    codeHashId: bigint
     creationBlock: number
     DataPages: number
     UserStackPages: number
@@ -64,6 +65,7 @@ export class CONTRACT {
         this.activationAmount = Constants.activationAmount
         this.creator = Constants.creatorID
         this.contract = Constants.contractID
+        this.codeHashId = 0n
         this.creationBlock = Blockchain.currentBlock
         this.DataPages = Constants.contractDPages
         this.UserStackPages = Constants.contractUSPages

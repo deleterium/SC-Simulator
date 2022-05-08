@@ -85,18 +85,35 @@ export class CPU {
             stepFee: 0n,
             regex: /^\s*\^program\s+(\w+)\s+([\s\S]+)$/,
             execute (ContractState, regexParts) {
-                if (regexParts[1] === 'activationAmount') {
+                switch (regexParts[1]) {
+                case 'activationAmount':
                     ContractState.activationAmount = BigInt(regexParts[2].trim())
-                } else if (regexParts[1] === 'creator') {
+                    break
+                case 'creator':
                     ContractState.creator = BigInt(regexParts[2].trim())
-                } else if (regexParts[1] === 'contract') {
+                    break
+                case 'contract':
                     ContractState.contract = BigInt(regexParts[2].trim())
-                } else if (regexParts[1] === 'DataPages') {
+                    break
+                case 'DataPages':
                     ContractState.DataPages = Number(regexParts[2].trim())
-                } else if (regexParts[1] === 'UserStackPages') {
+                    break
+                case 'UserStackPages':
                     ContractState.UserStackPages = Number(regexParts[2].trim())
-                } else if (regexParts[1] === 'CodeStackPages') {
+                    break
+                case 'CodeStackPages':
                     ContractState.CodeStackPages = Number(regexParts[2].trim())
+                    break
+                case 'codeHashId':
+                    ContractState.codeHashId = BigInt(regexParts[2].trim())
+                    break
+                case 'description':
+                case 'name':
+                    break
+                default:
+                    ContractState.dead = true
+                    ContractState.exception = `Unknow macro ^program found: ${regexParts[1]}`
+                    return true
                 }
                 ContractState.instructionPointer = ContractState.getNextInstructionLine()
                 return false
