@@ -667,6 +667,35 @@ export class CPU {
             }
         },
         {
+            name: 'POW_DAT',
+            stepFee: 1n,
+            regex: /^\s*POW\s+@(\w+)\s+\$(\w+)\s*$/,
+            execute (ContractState, regexParts) {
+                const variable1 = ContractState.Memory.find(mem => mem.varName === regexParts[1])
+                const variable2 = ContractState.Memory.find(mem => mem.varName === regexParts[2])
+                let val1: number, val2: number
+                let result = 0
+                if (variable1 === undefined) val1 = 0
+                else val1 = Number(utils.unsigned2signed(variable1.value))
+                if (variable2 === undefined) val2 = 0
+                else val2 = Number(utils.unsigned2signed(variable2.value)) / 1.0E8
+                if (val1 > 0) {
+                    result = Math.pow(val1, val2)
+                    if (Number.isNaN(result) || result > Constants.numberMaxPositive) {
+                        result = 0
+                    }
+                }
+                result = Math.trunc(result)
+                if (variable1 === undefined) {
+                    ContractState.Memory.push({ varName: regexParts[1], value: BigInt(result) })
+                } else {
+                    variable1.value = BigInt(result)
+                }
+                ContractState.instructionPointer = ContractState.getNextInstructionLine()
+                return true
+            }
+        },
+        {
             name: 'JMP_ADR',
             stepFee: 1n,
             regex: /^\s*JMP\s+:(\w+)\s*$/,

@@ -20,7 +20,8 @@ export const Constants = {
 
     // do not change these
     minus1: 18446744073709551615n, // -1 in 64-bit unsigned
-    pow2to64: 18446744073709551616n // 2^64
+    pow2to64: 18446744073709551616n, // 2^64
+    numberMaxPositive: 9223372036854775000
 }
 
 export const Blockchain = new BLOCKCHAIN()
