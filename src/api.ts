@@ -685,10 +685,7 @@ export class API_MICROCODE {
                 if (tx === undefined || tx.recipient !== ContractState.contract) {
                     return Constants.minus1
                 }
-                if (tx.messageArr.reduce((a, b) => a + b, 0n) === 0n) {
-                    return 0n
-                }
-                return 1n
+                return BigInt(tx.type)
             }
         },
         {

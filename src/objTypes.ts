@@ -37,6 +37,7 @@ export interface MapObj {
  *  @member {? string} messageHex - If messageText is define, this is ignored. Max 64 chars hexadecimal
  */
 export interface UserTransactionObj {
+    type: number
     sender: bigint
     recipient: bigint
     amount: bigint

@@ -39,6 +39,7 @@ interface BlockchainMapObj {
  *  @member {? string} messageHex max 64 chars hexadecimal
  */
 interface BlockchainTransactionObj {
+    type: number
     sender: bigint
     recipient: bigint
     txid: bigint
@@ -96,6 +97,7 @@ export class BLOCKCHAIN {
 
             // pushes new TX object to blockchain array
             this.transactions.push({
+                type: curTX.type ?? 1,
                 sender: curTX.sender,
                 recipient: curTX.recipient,
                 txid: txid,
