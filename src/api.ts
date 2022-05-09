@@ -588,22 +588,20 @@ export class API_MICROCODE {
             funName: 'check_A_Is_Zero',
             opCode: 0x35,
             execute (ContractState) {
-                // wrong boolean logic, but consistent to signum. Avoid using this function...
                 if (ContractState.A.reduce((a, b) => a + b, 0n) === 0n) {
-                    return 0n
+                    return 1n
                 }
-                return 1n
+                return 0n
             }
         },
         {
             funName: 'check_B_Is_Zero',
             opCode: 0x35,
             execute (ContractState) {
-                // wrong boolean logic, but consistent to signum. Avoid using this function...
                 if (ContractState.B.reduce((a, b) => a + b, 0n) === 0n) {
-                    return 0n
+                    return 1n
                 }
-                return 1n
+                return 0n
             }
         },
         {
