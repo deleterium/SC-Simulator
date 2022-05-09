@@ -191,6 +191,21 @@ export class BLOCKCHAIN {
 
     /**
      *
+     * @param id Account id
+     * @param asset Asset id to query
+     * @returns Its token quantity. If account does not exists or quantity is not defined, zero is returned
+     */
+    getTokenQuantityFrom (id: bigint, asset: bigint) {
+        const foundAccount = this.accounts.find(acc => acc.id === id)
+        if (foundAccount === undefined) {
+            return 0n
+        }
+        const foundAsset = foundAccount.tokens.find(tkn => tkn.asset === asset)
+        return foundAsset?.quantity ?? 0n
+    }
+
+    /**
+     *
      * @param txid txid to search
      * @returns The BlockchainTransactionObj or undefined if no one found
      */

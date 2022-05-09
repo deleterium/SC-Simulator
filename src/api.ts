@@ -746,7 +746,11 @@ export class API_MICROCODE {
             funName: 'get_Current_Balance',
             opCode: 0x35,
             execute (ContractState) {
-                return Blockchain.getBalanceFrom(ContractState.contract)
+                const asset = ContractState.B[1]
+                if (asset === 0n) {
+                    return Blockchain.getBalanceFrom(ContractState.contract)
+                }
+                return Blockchain.getTokenQuantityFrom(ContractState.contract, asset)
             }
         },
         {
