@@ -772,6 +772,21 @@ export class API_MICROCODE {
                 }
                 return found.value
             }
+        },
+        {
+            funName: 'Get_Activation_Fee',
+            opCode: 0x35,
+            execute (ContractState) {
+                const atId = ContractState.B[1]
+                if (atId === 0n || atId === ContractState.contract) {
+                    return ContractState.activationAmount
+                }
+                const foundContract = Contracts.find(Obj => Obj.contract === atId)
+                if (foundContract === undefined) {
+                    return 0n
+                }
+                return foundContract.activationAmount
+            }
         }
     ]
 
