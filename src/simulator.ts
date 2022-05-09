@@ -49,7 +49,8 @@ export class SIMULATOR {
                     if (key === 'blockheight') {
                         return Number(value)
                     }
-                    if (key === 'sender' || key === 'recipient' || key === 'amount') {
+                    if (key === 'sender' || key === 'recipient' || key === 'amount' ||
+                        key === 'asset' || key === 'quantity') {
                         return BigInt(value.replace(/_/g, ''))
                     }
                 }

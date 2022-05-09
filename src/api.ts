@@ -323,6 +323,7 @@ export class API_MICROCODE {
                 ContractState.enqueuedTX.push({
                     recipient: ContractState.B[0],
                     amount: account.balance,
+                    tokens: [],
                     messageArr: [0n, 0n, 0n, 0n]
                 })
                 account.balance = 0n
@@ -348,6 +349,7 @@ export class API_MICROCODE {
                 ContractState.enqueuedTX.push({
                     recipient: ContractState.B[0],
                     amount: sendBalance,
+                    tokens: [],
                     messageArr: [0n, 0n, 0n, 0n]
                 })
             }
@@ -368,6 +370,7 @@ export class API_MICROCODE {
                 ContractState.enqueuedTX.push({
                     recipient: ContractState.B[0],
                     amount: 0n,
+                    tokens: [],
                     messageArr: [ContractState.A[0], ContractState.A[1], ContractState.A[2], ContractState.A[3]]
                 })
             }
@@ -486,6 +489,7 @@ export class API_MICROCODE {
                 ContractState.enqueuedTX.push({
                     recipient: ContractState.B[0],
                     amount: value,
+                    tokens: [],
                     messageArr: [0n, 0n, 0n, 0n]
                 })
             }

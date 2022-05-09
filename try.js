@@ -509,11 +509,11 @@ function stringifyReplacer (key, value) {
         key === 'instructionPointer') {
         return
     }
-    if (key === 'balance' || key === 'amount') {
-        return utils.long2stringBalance(value) + 'n'
+    if (key === 'balance' || key === 'amount' || key === 'quantity') {
+        return utils.long2stringBalance(value)
     }
     if (typeof value === 'bigint') {
-        return value.toString(10) + 'n'
+        return value.toString(10)
     } else if (typeof value === 'number') {
         return value.toString(10)
     } else {

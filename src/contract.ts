@@ -9,7 +9,7 @@ import {
 
 import { utils } from './utils.js'
 
-import { MapObj, MemoryObj } from './objTypes.js'
+import { MapObj, MemoryObj, Token } from './objTypes.js'
 import { CPU } from './cpu.js'
 
 /**
@@ -21,6 +21,7 @@ import { CPU } from './cpu.js'
 interface ContractTransactionObj {
     recipient: bigint
     amount: bigint
+    tokens: Token[]
     messageArr: bigint[]
 }
 
@@ -221,12 +222,8 @@ export class CONTRACT {
      */
     dispatchEnqueuedTX () {
         this.enqueuedTX.forEach(tx => {
-            const recaccount = Blockchain.accounts.find(obj => obj.id === tx.recipient)
-            if (recaccount === undefined) {
-                Blockchain.accounts.push({ id: tx.recipient, balance: tx.amount })
-            } else {
-                recaccount.balance += tx.amount
-            }
+            const recaccount = Blockchain.getAccountFromId(tx.recipient)
+            recaccount.balance += tx.amount
             Blockchain.txHeight++
 
             const messageHex = utils.messagearray2hexstring(tx.messageArr)
@@ -237,6 +234,7 @@ export class CONTRACT {
                 recipient: tx.recipient,
                 txid: utils.getRandom64bit(),
                 amount: tx.amount,
+                tokens: tx.tokens,
                 blockheight: Blockchain.currentBlock,
                 timestamp: (BigInt(Blockchain.currentBlock) << 32n) + Blockchain.txHeight,
                 messageArr: tx.messageArr,

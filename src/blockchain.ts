@@ -1,7 +1,7 @@
 
 import { utils } from './utils.js'
 
-import { MapObj, UserTransactionObj } from './objTypes.js'
+import { MapObj, Token, UserTransactionObj } from './objTypes.js'
 
 /**
  * Object for accounts stored in blockchain
@@ -12,6 +12,7 @@ import { MapObj, UserTransactionObj } from './objTypes.js'
 interface AccountObj {
     id: bigint
     balance: bigint
+    tokens: Token[]
 }
 
 /**
@@ -44,6 +45,7 @@ interface BlockchainTransactionObj {
     recipient: bigint
     txid: bigint
     amount: bigint
+    tokens: Token[]
     blockheight: number
     timestamp: bigint
     messageArr: bigint[]
@@ -82,6 +84,11 @@ export class BLOCKCHAIN {
             this.addBalanceTo(curTX.sender, -curTX.amount)
             // Process balance for recipient account
             this.addBalanceTo(curTX.recipient, curTX.amount)
+            // Process tokens transfers
+            curTX.tokens.forEach(Tkn => {
+                this.addTokensTo(curTX.sender, Tkn.asset, -Tkn.quantity)
+                this.addTokensTo(curTX.recipient, Tkn.asset, Tkn.quantity)
+            })
             // Calculate timestamp
             this.txHeight++
             const timestamp = (BigInt(curTX.blockheight) << 32n) + this.txHeight
@@ -94,14 +101,21 @@ export class BLOCKCHAIN {
             } else if (curTX.messageHex !== undefined) {
                 txhexstring = curTX.messageHex
             }
+            let expectedType = 0 // Ordinary payment
+            if (curTX.tokens.length !== 0) {
+                expectedType = 2 // Token transfer
+            } else if (curTX.amount === 0n && (curTX.messageHex || curTX.messageText)) {
+                expectedType = 1 // Arbitrary message
+            }
 
             // pushes new TX object to blockchain array
             this.transactions.push({
-                type: curTX.type ?? 1,
+                type: curTX.type ?? expectedType,
                 sender: curTX.sender,
                 recipient: curTX.recipient,
                 txid: txid,
                 amount: curTX.amount,
+                tokens: curTX.tokens,
                 blockheight: curTX.blockheight,
                 timestamp: timestamp,
                 processed: false,
@@ -120,12 +134,25 @@ export class BLOCKCHAIN {
      * @param amount BigInt Amount to be added (can be negative)
      */
     addBalanceTo (account: bigint, amount: bigint) {
-        const foundAccount = this.accounts.find(obj => obj.id === account)
-        if (foundAccount === undefined) {
-            this.accounts.push({ id: account, balance: amount })
-        } else {
-            foundAccount.balance += amount
+        const foundAccount = this.getAccountFromId(account)
+        foundAccount.balance += amount
+    }
+
+    /**
+     * Adds tokens to an account.
+     *
+     * @param account BigInt Numeric account
+     * @param asset BigInt Asset to be added
+     * @param quantity BigInt Quantity QNT to be added (can be negative)
+     */
+    addTokensTo (account: bigint, asset: bigint, quantity: bigint) {
+        const foundAccount = this.getAccountFromId(account)
+        const foundAsset = foundAccount.tokens.find(tkn => tkn.asset === asset)
+        if (foundAsset === undefined) {
+            foundAccount.tokens.push({ asset, quantity })
+            return
         }
+        foundAsset.quantity += quantity
     }
 
     /**
@@ -136,7 +163,7 @@ export class BLOCKCHAIN {
     getAccountFromId (id: bigint) {
         const Acc = this.accounts.find(acc => acc.id === id)
         if (Acc === undefined) {
-            const newitem = this.accounts.push({ id: id, balance: 0n })
+            const newitem = this.accounts.push({ id: id, balance: 0n, tokens: [] })
             return this.accounts[newitem - 1]
         }
         return Acc

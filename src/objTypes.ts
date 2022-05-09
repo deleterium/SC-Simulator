@@ -28,6 +28,17 @@ export interface MapObj {
 }
 
 /**
+ * Object for Tokens
+ *
+ * @member {bigint} asset ID (64-bit unsigned)
+ * @member {bigint} quantity QNT (64-bit unsigned)
+ */
+export interface Token {
+    asset: bigint
+    quantity: bigint
+}
+
+/**
  * Object for transactions created by user
  *  @member {bigint} sender
  *  @member {bigint} recipient
@@ -41,6 +52,7 @@ export interface UserTransactionObj {
     sender: bigint
     recipient: bigint
     amount: bigint
+    tokens: Token[]
     blockheight: number
     messageText?: string
     messageHex?: string
