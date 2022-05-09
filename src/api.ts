@@ -657,6 +657,14 @@ export class API_MICROCODE {
             }
         },
         {
+            funName: 'Check_Sig_B_With_A',
+            opCode: 0x35,
+            execute (ContractState) {
+                // TODO
+                return 0n
+            }
+        },
+        {
             funName: 'get_Block_Timestamp',
             opCode: 0x35,
             execute (ContractState) {
