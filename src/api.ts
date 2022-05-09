@@ -376,8 +376,8 @@ export class API_MICROCODE {
             funName: 'Set_Map_Value_Keys_In_A',
             opCode: 0x32,
             execute (ContractState) {
-                const found = ContractState.map.filter(Obj => Obj.k1 === ContractState.A[0] && Obj.k2 === ContractState.A[1])
-                if (found.length === 0) {
+                const found = ContractState.map.find(Obj => Obj.k1 === ContractState.A[0] && Obj.k2 === ContractState.A[1])
+                if (found === undefined) {
                     ContractState.map.push({
                         k1: ContractState.A[0],
                         k2: ContractState.A[1],
@@ -385,7 +385,7 @@ export class API_MICROCODE {
                     })
                     return
                 }
-                found[0].value = ContractState.A[3]
+                found.value = ContractState.A[3]
             }
         },
         {
@@ -772,8 +772,9 @@ export class API_MICROCODE {
             opCode: 0x35,
             execute (ContractState) {
                 let targetMap = ContractState.map
-                if (ContractState.A[2] !== 0n) {
-                    const contractMap = Blockchain.maps.find(obj => obj.id === ContractState.A[2])
+                const targetId = ContractState.A[2]
+                if (targetId !== 0n && targetId !== ContractState.contract) {
+                    const contractMap = Blockchain.getMapFromId(targetId)
                     if (contractMap === undefined) {
                         return 0n
                     }

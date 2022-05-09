@@ -144,6 +144,15 @@ export class BLOCKCHAIN {
 
     /**
      *
+     * @param id Account id to search
+     * @returns map found for the given id
+     */
+    getMapFromId (id: bigint) {
+        return this.maps.find(Map => Map.id === id)
+    }
+
+    /**
+     *
      * @param id Account id to get balance
      * @returns Its balance. If account does not exists, it is NOT created
      */
