@@ -708,7 +708,12 @@ export class API_MICROCODE {
                 if (tx === undefined || tx.recipient !== ContractState.contract) {
                     return Constants.minus1
                 }
-                return tx.amount - ContractState.activationAmount
+                const asset = ContractState.A[1]
+                if (asset === 0n) {
+                    return tx.amount - ContractState.activationAmount
+                }
+                const foundAsset = tx.tokens.find(tkn => tkn.asset === asset)
+                return foundAsset?.quantity ?? 0n
             }
         },
         {
