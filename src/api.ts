@@ -801,6 +801,22 @@ export class API_MICROCODE {
             }
         },
         {
+            funName: 'Issue_Asset',
+            opCode: 0x35,
+            execute (ContractState) {
+                const tokenID = Constants.tokenID
+                ContractState.enqueuedTX.push({
+                    recipient: 0n,
+                    amount: 0n,
+                    tokens: [{ asset: tokenID, quantity: 0n }],
+                    messageArr: [ContractState.A[0], ContractState.A[1], 0n, 0n]
+                })
+                // Incremented next mint asset id
+                Constants.tokenID++
+                return tokenID
+            }
+        },
+        {
             funName: 'Get_Activation_Fee',
             opCode: 0x35,
             execute (ContractState) {

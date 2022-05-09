@@ -1155,10 +1155,15 @@ export class CPU {
         if (account === undefined || currParts === null) {
             return null
         }
-        account.balance -= Constants.stepfee * InstructionObj.stepFee
+        // process exceptions for step fee
+        let regularStepFee = InstructionObj.stepFee
+        if (currParts[2] === 'Issue_Asset') {
+            regularStepFee = 150000n
+        }
+        account.balance -= Constants.stepfee * regularStepFee
         if (account.balance < 0) {
             ContractState.frozen = true
-            account.balance += Constants.stepfee * InstructionObj.stepFee
+            account.balance += Constants.stepfee * regularStepFee
             ContractState.previousBalance = account.balance
             return true
         }

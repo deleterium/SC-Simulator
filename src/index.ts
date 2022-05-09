@@ -13,6 +13,7 @@ export const Constants = {
     activationAmount: 10000000n, // contract activation amount
     creatorID: 555n, // Account ID of creator
     contractID: 999n, // Account ID of contract
+    tokenID: 101010n, // Asset id to be used in Mint_Asset ()
     contractDPages: 10, // Number of data pages of deployed contract
     contractUSPages: 1, // Number of user stack pages of deployed contract
     contractCSPages: 1, // Number of code stack pages of deployed contract
