@@ -387,6 +387,16 @@ export class API_MICROCODE {
                 }
                 found[0].value = ContractState.A[3]
             }
+        },
+        {
+            funName: 'Put_Last_Block_GSig_In_A',
+            opCode: 0x32,
+            execute (ContractState) {
+                ContractState.A = [utils.getRandom64bit(),
+                    utils.getRandom64bit(),
+                    utils.getRandom64bit(),
+                    utils.getRandom64bit()]
+            }
         }
     ]
 
