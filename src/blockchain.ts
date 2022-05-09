@@ -80,6 +80,9 @@ export class BLOCKCHAIN {
             if (curTX.blockheight !== this.currentBlock) {
                 return
             }
+            if (curTX.tokens === undefined) {
+                curTX.tokens = []
+            }
             // Process balance for sender account
             this.addBalanceTo(curTX.sender, -curTX.amount)
             // Process balance for recipient account

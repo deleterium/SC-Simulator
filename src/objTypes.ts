@@ -52,7 +52,7 @@ export interface UserTransactionObj {
     sender: bigint
     recipient: bigint
     amount: bigint
-    tokens: Token[]
+    tokens?: Token[]
     blockheight: number
     messageText?: string
     messageHex?: string
