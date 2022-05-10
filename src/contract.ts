@@ -50,6 +50,7 @@ export class CONTRACT {
     A: [ bigint, bigint, bigint, bigint ]
     B: [ bigint, bigint, bigint, bigint ]
     map: MapObj[]
+    issuedAssets: bigint[]
     PCS: number
     ERR: number | null
     sourceCode: string[]
@@ -79,6 +80,7 @@ export class CONTRACT {
         this.A = [0n, 0n, 0n, 0n]
         this.B = [0n, 0n, 0n, 0n]
         this.map = []
+        this.issuedAssets = []
         this.PCS = 0
         this.ERR = null
         this.sourceCode = asmSourceCode.split('\n')

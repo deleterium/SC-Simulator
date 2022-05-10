@@ -392,6 +392,19 @@ export class API_MICROCODE {
             }
         },
         {
+            funName: 'Mint_Asset',
+            opCode: 0x32,
+            execute (ContractState) {
+                const quantity = ContractState.B[0]
+                const asset = ContractState.B[1]
+                if (ContractState.issuedAssets.find(val => val === asset) === undefined) {
+                    return
+                }
+                const accountAsset = Blockchain.getAssetFromId(ContractState.contract, asset)
+                accountAsset.quantity += quantity
+            }
+        },
+        {
             funName: 'Put_Last_Block_GSig_In_A',
             opCode: 0x32,
             execute (ContractState) {
@@ -827,6 +840,7 @@ export class API_MICROCODE {
             opCode: 0x35,
             execute (ContractState) {
                 const tokenID = Constants.tokenID
+                ContractState.issuedAssets.push(tokenID)
                 ContractState.enqueuedTX.push({
                     recipient: 0n,
                     amount: 0n,

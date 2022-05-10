@@ -175,6 +175,22 @@ export class BLOCKCHAIN {
     /**
      *
      * @param id Account id to search
+     * @param asset Asset id to search
+     * @returns asset found or one newly created
+     */
+    getAssetFromId (id: bigint, asset: bigint) {
+        const foundAccount = this.getAccountFromId(id)
+        const foundAsset = foundAccount.tokens.find(tkn => tkn.asset === asset)
+        if (foundAsset === undefined) {
+            const newitem = foundAccount.tokens.push({ asset, quantity: 0n })
+            return foundAccount.tokens[newitem - 1]
+        }
+        return foundAsset
+    }
+
+    /**
+     *
+     * @param id Account id to search
      * @returns map found for the given id
      */
     getMapFromId (id: bigint) {
