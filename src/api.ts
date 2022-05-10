@@ -868,6 +868,17 @@ export class API_MICROCODE {
                 }
                 return foundContract.activationAmount
             }
+        },
+        {
+            funName: 'Get_Asset_Circulating',
+            opCode: 0x35,
+            execute (ContractState) {
+                const asset = ContractState.B[1]
+                if (asset === 0n) {
+                    return 0n
+                }
+                return Blockchain.getAssetCirculating(asset)
+            }
         }
     ]
 

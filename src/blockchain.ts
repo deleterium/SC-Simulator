@@ -189,6 +189,27 @@ export class BLOCKCHAIN {
     }
 
     /**
+    *
+    * @param asset Asset id to search
+    * @returns Total amount of QNT circulating
+    */
+    getAssetCirculating (asset: bigint) {
+        return this.accounts.reduce((previous, currAccount) => {
+            if (currAccount.id === 0n) {
+                // Ignore burned tokens at id 0
+                return previous
+            }
+            const currAssetQNT = currAccount.tokens.reduce((prev, tkn) => {
+                if (tkn.asset === asset) {
+                    return tkn.quantity
+                }
+                return prev
+            }, 0n)
+            return previous + currAssetQNT
+        }, 0n)
+    }
+
+    /**
      *
      * @param id Account id to search
      * @returns map found for the given id
