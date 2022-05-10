@@ -855,6 +855,15 @@ export class API_MICROCODE {
             }
         },
         {
+            funName: 'Get_Asset_Holders_Count',
+            opCode: 0x35,
+            execute (ContractState) {
+                const mininum = ContractState.B[0]
+                const asset = ContractState.B[1]
+                return Blockchain.getAssetHoldersCount(asset, mininum)
+            }
+        },
+        {
             funName: 'Get_Activation_Fee',
             opCode: 0x35,
             execute (ContractState) {

@@ -210,6 +210,25 @@ export class BLOCKCHAIN {
     }
 
     /**
+    *
+    * @param asset Asset id to search
+    * @param mininum Minimum quantity to have in account
+    * @returns Number of accounts that match query
+    */
+    getAssetHoldersCount (asset: bigint, mininum: bigint) {
+        return this.accounts.reduce((previous, currAccount) => {
+            if (currAccount.id === 0n) {
+                // Ignore burned tokens at id 0
+                return previous
+            }
+            const hasAsset = currAccount.tokens.find(
+                tkn => tkn.asset === asset && tkn.quantity !== 0n && tkn.quantity >= mininum
+            )
+            return previous + (hasAsset ? 1n : 0n)
+        }, 0n)
+    }
+
+    /**
      *
      * @param id Account id to search
      * @returns map found for the given id
