@@ -491,9 +491,11 @@ export class API_MICROCODE {
             execute (ContractState, value) {
                 const recipient = ContractState.B[0]
                 const asset = ContractState.B[1]
-                const account = Blockchain.getAccountFromId(ContractState.contract)
-
+                if (value > Constants.maxPositive || value === 0n) {
+                    return
+                }
                 if (asset === 0n) {
+                    const account = Blockchain.getAccountFromId(ContractState.contract)
                     if (value > account.balance) {
                         value = account.balance
                     }
@@ -511,7 +513,7 @@ export class API_MICROCODE {
                     })
                     return
                 }
-                const accountAsset = account.tokens.find(tkn => tkn.asset === asset) ?? { asset, quantity: 0n }
+                const accountAsset = Blockchain.getAssetFromId(ContractState.contract, asset)
                 if (value > accountAsset.quantity) {
                     value = accountAsset.quantity
                 }
