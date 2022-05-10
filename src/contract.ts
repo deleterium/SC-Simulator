@@ -228,8 +228,13 @@ export class CONTRACT {
 
             const messageHex = utils.messagearray2hexstring(tx.messageArr)
 
+            let type = 22
+            if (tx.tokens.length !== 0) {
+                type = 2
+            }
+
             Blockchain.transactions.push({
-                type: 22,
+                type,
                 sender: this.contract,
                 recipient: tx.recipient,
                 txid: utils.getRandom64bit(),

@@ -476,21 +476,43 @@ export class API_MICROCODE {
             funName: 'send_to_Address_in_B',
             opCode: 0x33,
             execute (ContractState, value) {
+                const recipient = ContractState.B[0]
+                const asset = ContractState.B[1]
                 const account = Blockchain.getAccountFromId(ContractState.contract)
-                if (value > account.balance) {
-                    value = account.balance
+
+                if (asset === 0n) {
+                    if (value > account.balance) {
+                        value = account.balance
+                    }
+                    account.balance -= value
+                    const tx = ContractState.enqueuedTX.find(TX => TX.recipient === recipient && TX.tokens.length === 0)
+                    if (tx !== undefined) {
+                        tx.amount += value
+                        return
+                    }
+                    ContractState.enqueuedTX.push({
+                        recipient: recipient,
+                        amount: value,
+                        tokens: [],
+                        messageArr: []
+                    })
+                    return
                 }
-                account.balance -= value
-                const tx = ContractState.enqueuedTX.find(TX => TX.recipient === ContractState.B[0])
-                if (tx !== undefined) {
-                    tx.amount += value
+                const accountAsset = account.tokens.find(tkn => tkn.asset === asset) ?? { asset, quantity: 0n }
+                if (value > accountAsset.quantity) {
+                    value = accountAsset.quantity
+                }
+                accountAsset.quantity -= value
+                const tx = ContractState.enqueuedTX.find(TX => TX.recipient === recipient && TX.tokens[0]?.asset === asset)
+                if (tx) {
+                    tx.tokens[0].quantity += value
                     return
                 }
                 ContractState.enqueuedTX.push({
-                    recipient: ContractState.B[0],
-                    amount: value,
-                    tokens: [],
-                    messageArr: [0n, 0n, 0n, 0n]
+                    recipient: recipient,
+                    amount: 0n,
+                    tokens: [{ asset, quantity: value }],
+                    messageArr: []
                 })
             }
         }
