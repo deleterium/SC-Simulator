@@ -174,6 +174,27 @@ export class BLOCKCHAIN {
 
     /**
      *
+     * @param asset Asset id to query
+     * @param minAmount Minimum amount to be included in results
+     * @returns Array with userId and AssetQuantity that matches the query
+     */
+    getAllHolders (asset: bigint, minAmount: bigint): [bigint, bigint][] {
+        const allHolders = this.accounts.reduce<[bigint, bigint][]>((previous, currAccount) => {
+            if (currAccount.id === 0n) {
+                // skip burn address
+                return previous
+            }
+            const foundAsset = currAccount.tokens.find(tkn => tkn.asset === asset && tkn.quantity !== 0n && tkn.quantity >= minAmount)
+            if (foundAsset) {
+                previous.push([currAccount.id, foundAsset.quantity])
+            }
+            return previous
+        }, [])
+        return allHolders
+    }
+
+    /**
+     *
      * @param id Account id to search
      * @param asset Asset id to search
      * @returns asset found or one newly created

@@ -405,6 +405,99 @@ export class API_MICROCODE {
             }
         },
         {
+            funName: 'Distribute_To_Asset_Holders',
+            opCode: 0x32,
+            execute (ContractState) {
+                const holdersAssetMinimum = ContractState.B[0]
+                const holdersAsset = ContractState.B[1]
+                let amountToDistribute = ContractState.A[0]
+                const assetToDistribute = ContractState.A[2]
+                let quantityToDistribute = ContractState.A[3]
+                if (holdersAsset === 0n) {
+                    return
+                }
+                const preliminaryHoldersCount = Blockchain.getAssetHoldersCount(holdersAsset, holdersAssetMinimum)
+                if (preliminaryHoldersCount === 0n) {
+                    return
+                }
+                if (assetToDistribute !== 0n) {
+                    const accountAsset = Blockchain.getAssetFromId(ContractState.contract, assetToDistribute)
+                    if (quantityToDistribute > accountAsset.quantity) {
+                        quantityToDistribute = accountAsset.quantity
+                    }
+                    accountAsset.quantity -= quantityToDistribute
+                }
+                if (amountToDistribute > 0) {
+                    const account = Blockchain.getAccountFromId(ContractState.contract)
+                    if (amountToDistribute > account.balance) {
+                        amountToDistribute = account.balance
+                    }
+                    account.balance -= amountToDistribute
+                }
+                if (quantityToDistribute === 0n && amountToDistribute === 0n) {
+                    return
+                }
+                const holdersAndQuantity = Blockchain.getAllHolders(holdersAsset, holdersAssetMinimum)
+                if (holdersAndQuantity.length === 0) {
+                    // Cancel distribution akward situation in contract tring to distribute all its own asset
+                    //  but it is the only holder.
+                    const account = Blockchain.getAccountFromId(ContractState.contract)
+                    account.balance += amountToDistribute
+                    const accountAsset = Blockchain.getAssetFromId(ContractState.contract, assetToDistribute)
+                    if (accountAsset) {
+                        accountAsset.quantity += quantityToDistribute
+                    }
+                    return
+                }
+                holdersAndQuantity.sort((rowA, rowB) => {
+                    return Number(rowA[1] - rowB[1])
+                })
+                const thisCirculatingSupply = holdersAndQuantity.reduce((prev, row) => {
+                    return prev + row[1]
+                }, 0n)
+                let distributedAmount = 0n
+                let distributedQuantity = 0n
+                for (let i = 0; i < holdersAndQuantity.length; i++) {
+                    const foundAccount = Blockchain.getAccountFromId(holdersAndQuantity[i][0])
+                    if (assetToDistribute !== 0n) {
+                        let quantityToHolder = (quantityToDistribute * holdersAndQuantity[i][1]) / thisCirculatingSupply
+                        if (i === holdersAndQuantity.length - 1) {
+                            // all remaining to last one, the higher share holder
+                            quantityToHolder = quantityToDistribute - distributedQuantity
+                        }
+                        const foundDistAsset = foundAccount.tokens.find(tkn => tkn.asset === assetToDistribute)
+                        if (foundDistAsset === undefined) {
+                            foundAccount.tokens.push({ asset: assetToDistribute, quantity: quantityToHolder })
+                        } else {
+                            foundDistAsset.quantity += quantityToHolder
+                        }
+                        distributedQuantity += quantityToHolder
+                    }
+                    if (amountToDistribute !== 0n) {
+                        let amountToHolder = (amountToDistribute * holdersAndQuantity[i][1]) / thisCirculatingSupply
+                        if (i === holdersAndQuantity.length - 1) {
+                            // all remaining to last one, the higher share holder
+                            amountToHolder = amountToDistribute - distributedAmount
+                        }
+                        foundAccount.balance += amountToHolder
+                        distributedAmount += amountToHolder
+                    }
+                }
+                ContractState.enqueuedTX.push({
+                    recipient: 0n,
+                    amount: 0n,
+                    tokens: [],
+                    messageArr: [ // "Indirect balance/token distributed"
+                        8386658473162862153n,
+                        7305804385234280992n,
+                        7214887984920753199n,
+                        8391721685706109801n,
+                        25701n
+                    ]
+                })
+            }
+        },
+        {
             funName: 'Put_Last_Block_GSig_In_A',
             opCode: 0x32,
             execute (ContractState) {
