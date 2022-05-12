@@ -310,6 +310,22 @@ export class API_MICROCODE {
             }
         },
         {
+            funName: 'B_To_Assets_Of_Tx_In_A',
+            opCode: 0x32,
+            execute (ContractState) {
+                const tx = Blockchain.transactions.find(TX => TX.recipient === ContractState.contract && TX.txid === ContractState.A[0])
+                ContractState.B = [0n, 0n, 0n, 0n]
+                if (tx === undefined) {
+                    return
+                }
+                tx.tokens.forEach((tkn, idx) => {
+                    if (idx < 4) {
+                        ContractState.B[idx] = tkn.asset
+                    }
+                })
+            }
+        },
+        {
             funName: 'send_All_to_Address_in_B',
             opCode: 0x32,
             execute (ContractState) {
