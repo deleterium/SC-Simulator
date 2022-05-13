@@ -2,15 +2,33 @@
 Smart contracts simulator and debugger for Signum
 
 ## Usage
-[Run it](https://deleterium.github.io/SC-Simulator/try.html) on gitpages. Load example to try it with a simple contract. Transactions are JSON text to be parsed every time a block is forged and an example is provided on first load. You can prepare all transactions or can edit many times the same to get desired result. Remember to match tx.blockheight to Blockchain.currentBlock plus one. Note shortcuts for buttons via accesskeys. For big programs it is possible to detach all fieldsets to have a different view, more static.
+[Run it](https://deleterium.github.io/SC-Simulator/try.html) on gitpages. Load example to try it with a simple contract.
+For big programs it is possible to detach all fieldsets to have a different view, more static.
+
+### Transactions
+Transactions are JSON text to be parsed every time a block is forged and an example is provided on first load. You can prepare all transactions or can edit many times the same to get desired result. Remember to match tx.blockheight to Blockchain.currentBlock plus one. Note shortcuts for buttons via accesskeys. Use the following attributes:
+* "sender": long representation for a user id. Examples "12345988376423098", "0xAABBDD". Values will be parsed as big integer, but can be written as string, bigint (exame 15n) or number (without quotes, but not recomended).
+* "recipient": long representation for a user id. Same rules as "sender".
+* "amount": long representation for a NQT amount. Underscore will be disregarded but help with zeroes counting. Can be number, string or bigint. Examples: "100_0000_0000n", 213, "840000"
+* "blockheight": number of block. Used as number. Use only integers. Can be specified as string also.
+* "messageText": a string to be sent to the contract. Similar to send a message and set "MessageIsText" to true.
+* "messageHex": a hexadecimal string to be sent to the contract. Similar to send a message and set "MessageIsText" to false.
+* "tokens": an array of asset objects. Signum blockchain support at most 4 assets in one transaction. One asset is defined by:
+  * "asset": long representation for an asset id. Same rules as "sender".
+  * "quantity": long representation for an asset quantity in QNT. Same rules as "amount".
+
 ### Breakpoints
 Contract execution will halt on breakpoints. Toggle manually using the button and enter the line to stop. It is possible to click a line to toggle breakpoint state.
+
 ### Memory inspector
 You can check current memory values on table or pointing mouse over a variable name on code. Special attention to current contract states (stopped, frozen, finished, running or dead). Its is possible to check values for 256-bit pseudo-register A and B as its four longs parts A1..A4 and B1..B4. Lastly is presented other values for contract state, maybe it worth to check code/user stack.
+
 ### Forging
 All contracts will be executed in order to forge a new block. Breakpoints are disregarded during this process.
+
 ### Multi contracts
 It is possible to deploy many contracts. At any time, you can change and inspect other contract, just inform contract slot you want to check. Contracts id's will be incremented if there is other deployed with same id.
+
 ### Preprocessor directives
 When dealing with many contracts, some options can be handyfull and will override default constants when deploying a contract. Using these directives it is possible to set different values for contracts deployed on same run:
 * `^program activationAmount VALUE`
@@ -24,6 +42,8 @@ When dealing with many contracts, some options can be handyfull and will overrid
 * Pointer operations can lead to *false dead state* in simulator. Please declare all variables if using these instructions.
 * No check on balance. Balance can go negative for regular accounts, but not for Smart Contract.
 * Messages sent by contract only appears in blockchain when forging next block. This is to simulate actual signum, where only one tx is sent for each account during one block execution.
+* Currently only smart contracts from version 3 are supported. If you want to debug one from version 2, please download and install SC-Simulator version [1.0](https://github.com/deleterium/SC-Simulator/releases/tag/v1.0).
+* The API *Check_Sig_B_With_A* is not implemented and will always return zero/false.
 
 ## Configuration
 To set new defaults values you will need to run the project locally:
