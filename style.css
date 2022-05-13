@@ -90,7 +90,7 @@ label:hover                      { background: #ddf; }
 	outline: none;
 }
 #color_code {
-    counter-reset: line -1;
+    counter-reset: line;
     display: none;
 }
 #source-code, #color_code {

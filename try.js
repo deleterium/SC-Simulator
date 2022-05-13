@@ -1,6 +1,6 @@
 import { Blockchain, Contracts, Simulator } from './out/index.js'
 import { utils } from './out/utils.js'
-import { AsmHighlight } from './out/asm_highlight.js'
+import sah from 'https://cdn.jsdelivr.net/npm/smartc-assembly-highlight/dist/index.js'
 
 // Author: Rui Deleterium
 // Project: https://github.com/deleterium/SC-Simulator
@@ -13,6 +13,8 @@ let autoStepTimer
 let autoStepRunning = false
 const autoStepDelay = 200
 
+sah.Config.preLine = "<div id='codeline%line%' class='line'>"
+sah.Config.postLine = '</div>'
 /* Functions for user interface */
 
 window.onload = function () {
@@ -174,7 +176,7 @@ function setColorSource () {
         inform('No contract deployed.')
         return
     }
-    colorDOM.innerHTML = AsmHighlight.toHTML(Contracts[Simulator.currSlotContract].sourceCode.join('\n'))
+    colorDOM.innerHTML = sah.colorText(Contracts[Simulator.currSlotContract].sourceCode.join('\n'))
     sourceDOM.style.display = 'none'
     colorDOM.style.display = 'block'
     document.getElementById('deploy').disabled = true
@@ -388,7 +390,7 @@ function updatePage () {
 
     output += '</tr><tr>'
     output += '<td colspan="2"  class="taleft">Balance: ' + utils.long2stringBalance(Blockchain.getBalanceFrom(ContractState.contract)) + '</td>'
-    output += '<td title="Instruction pointer (next line)">IP: ' + ContractState.instructionPointer.toString() + '</td>'
+    output += '<td title="Instruction pointer (next line)">IP: ' + (ContractState.instructionPointer + 1).toString() + '</td>'
     output += '<td> ' + '' + '</td>'
     /* output += '<td>: '+'' + '</td>' */
     output += '<td> ' + '' + '</td>'
@@ -468,7 +470,7 @@ function updatePage () {
     if (line[0] !== undefined) {
         line[0].className = line[0].className.replace('activeline', '')
     }
-    line = document.getElementById('codeline' + (ContractState.instructionPointer))
+    line = document.getElementById('codeline' + (ContractState.instructionPointer + 1))
     if (line !== null) {
         line.className += ' activeline'
     }
