@@ -15,6 +15,30 @@ export interface MemoryObj {
 }
 
 /**
+ * Object for contract map
+ *
+ * @member {bigint} k1 key 1 (64-bit unsigned)
+ * @member {bigint} k2 key 2 (64-bit unsigned)
+ * @member {bigint} value Variable value (64-bit unsigned)
+ */
+export interface MapObj {
+    k1: bigint
+    k2: bigint
+    value: bigint
+}
+
+/**
+ * Object for Tokens
+ *
+ * @member {bigint} asset ID (64-bit unsigned)
+ * @member {bigint} quantity QNT (64-bit unsigned)
+ */
+export interface Token {
+    asset: bigint
+    quantity: bigint
+}
+
+/**
  * Object for transactions created by user
  *  @member {bigint} sender
  *  @member {bigint} recipient
@@ -24,9 +48,11 @@ export interface MemoryObj {
  *  @member {? string} messageHex - If messageText is define, this is ignored. Max 64 chars hexadecimal
  */
 export interface UserTransactionObj {
+    type: number
     sender: bigint
     recipient: bigint
     amount: bigint
+    tokens?: Token[]
     blockheight: number
     messageText?: string
     messageHex?: string

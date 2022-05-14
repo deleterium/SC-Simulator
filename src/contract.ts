@@ -9,19 +9,20 @@ import {
 
 import { utils } from './utils.js'
 
-import { MemoryObj } from './objTypes.js'
+import { MapObj, MemoryObj, Token } from './objTypes.js'
 import { CPU } from './cpu.js'
 
 /**
  * Object for transactions created by smart contracts
  *  @member {bigint} recipient
  *  @member {bigint} amount
- *  @member {bigint[4]} messageArr
+ *  @member {bigint[]} messageArr
  */
 interface ContractTransactionObj {
     recipient: bigint
     amount: bigint
-    messageArr: [ bigint, bigint, bigint, bigint ]
+    tokens: Token[]
+    messageArr: bigint[]
 }
 
 export class CONTRACT {
@@ -36,6 +37,7 @@ export class CONTRACT {
     activationAmount: bigint
     creator: bigint
     contract: bigint
+    codeHashId: bigint
     creationBlock: number
     DataPages: number
     UserStackPages: number
@@ -47,6 +49,8 @@ export class CONTRACT {
     exception: string
     A: [ bigint, bigint, bigint, bigint ]
     B: [ bigint, bigint, bigint, bigint ]
+    map: MapObj[]
+    issuedAssets: bigint[]
     PCS: number
     ERR: number | null
     sourceCode: string[]
@@ -63,6 +67,7 @@ export class CONTRACT {
         this.activationAmount = Constants.activationAmount
         this.creator = Constants.creatorID
         this.contract = Constants.contractID
+        this.codeHashId = 0n
         this.creationBlock = Blockchain.currentBlock
         this.DataPages = Constants.contractDPages
         this.UserStackPages = Constants.contractUSPages
@@ -74,6 +79,8 @@ export class CONTRACT {
         this.exception = ''
         this.A = [0n, 0n, 0n, 0n]
         this.B = [0n, 0n, 0n, 0n]
+        this.map = []
+        this.issuedAssets = []
         this.PCS = 0
         this.ERR = null
         this.sourceCode = asmSourceCode.split('\n')
@@ -217,21 +224,24 @@ export class CONTRACT {
      */
     dispatchEnqueuedTX () {
         this.enqueuedTX.forEach(tx => {
-            const recaccount = Blockchain.accounts.find(obj => obj.id === tx.recipient)
-            if (recaccount === undefined) {
-                Blockchain.accounts.push({ id: tx.recipient, balance: tx.amount })
-            } else {
-                recaccount.balance += tx.amount
-            }
+            const recaccount = Blockchain.getAccountFromId(tx.recipient)
+            recaccount.balance += tx.amount
             Blockchain.txHeight++
 
             const messageHex = utils.messagearray2hexstring(tx.messageArr)
 
+            let type = 22
+            if (tx.tokens.length !== 0) {
+                type = 2
+            }
+
             Blockchain.transactions.push({
+                type,
                 sender: this.contract,
                 recipient: tx.recipient,
                 txid: utils.getRandom64bit(),
                 amount: tx.amount,
+                tokens: tx.tokens,
                 blockheight: Blockchain.currentBlock,
                 timestamp: (BigInt(Blockchain.currentBlock) << 32n) + Blockchain.txHeight,
                 messageArr: tx.messageArr,
@@ -263,5 +273,17 @@ export class CONTRACT {
             break
         }
         return line
+    }
+
+    saveMapOnBlockchain () {
+        const oldValues = Blockchain.maps.find(obj => obj.id === this.contract)
+        if (oldValues === undefined) {
+            Blockchain.maps.push({
+                id: this.contract,
+                map: utils.deepCopy(this.map)
+            })
+            return
+        }
+        oldValues.map = utils.deepCopy(this.map)
     }
 }

@@ -20,14 +20,20 @@ export class utils {
         return (BigInt(Math.floor(Math.random() * 4294967296)) << 32n) + BigInt(Math.floor(Math.random() * 4294967296));
     }
     static hexstring2messagearray(inHexStr) {
-        inHexStr = inHexStr.padEnd(64, '0');
-        const ret = [0n, 0n, 0n, 0n];
+        if (inHexStr.length % 16 !== 0) {
+            inHexStr = inHexStr.padEnd(Math.trunc((inHexStr.length / 16) + 1) * 16, '0');
+        }
+        const ret = [];
         let base = 1n;
-        for (let i = 0n; i < 64n; i += 2n) {
-            if (i % 16n === 0n)
+        const totalLength = BigInt(inHexStr.length);
+        for (let i = 0n; i < totalLength; i += 2n) {
+            if (i % 16n === 0n) {
                 base = 1n;
-            else
+                ret.push(0n);
+            }
+            else {
                 base *= 256n;
+            }
             ret[Number(i / 16n)] += BigInt(Number('0x' + inHexStr.slice(Number(i), Number(i + 2n)))) * base;
         }
         return ret;
@@ -35,7 +41,7 @@ export class utils {
     static messagearray2hexstring(inArray) {
         let ret = '';
         let val;
-        for (let i = 0n; i < 32n; i++) {
+        for (let i = 0n; i < inArray.length * 8; i++) {
             val = (inArray[Number(i / 8n)] >> ((i % 8n) * 8n)) & 0xffn;
             ret += val.toString(16).padStart(2, '0');
         }
@@ -129,7 +135,7 @@ export class utils {
         for (j = 0; j < byarr.length; j++) {
             ret += byarr[j].toString(16).padStart(2, '0');
         }
-        return (ret.padEnd(64, '0'));
+        return ret;
     }
     static hexstring2string(inHexStr) {
         let c1, c2, c3, c4, cc;
@@ -189,5 +195,26 @@ export class utils {
                 continue;
             }
         } while (true);
+    }
+    // Note: Found at https://gist.github.com/sunnyy02/2477458d4d1c08bde8cc06cd8f56702e
+    // https://javascript.plainenglish.io/deep-clone-an-object-and-preserve-its-type-with-typescript-d488c35e5574
+    /**
+     * Create a deep copy of one variable.
+     */
+    static deepCopy(source) {
+        if (Array.isArray(source)) {
+            return source.map(item => this.deepCopy(item));
+        }
+        if (source instanceof Date) {
+            return new Date(source.getTime());
+        }
+        if (source && typeof source === 'object') {
+            return Object.getOwnPropertyNames(source).reduce((o, prop) => {
+                Object.defineProperty(o, prop, Object.getOwnPropertyDescriptor(source, prop));
+                o[prop] = this.deepCopy(source[prop]);
+                return o;
+            }, Object.create(Object.getPrototypeOf(source)));
+        }
+        return source;
     }
 }
