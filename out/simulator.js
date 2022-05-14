@@ -18,20 +18,24 @@ export class SIMULATOR {
      */
     parseUpcomingTransactions(JSONobj) {
         try {
+            // Remove single lines comments. Not standard!
+            JSONobj = JSONobj.replace(/\/\/.+$/gm, '');
             this.UpcomingTransactions = JSON.parse(JSONobj, (key, value) => {
                 if (typeof value === 'string') {
+                    value = value.replace(/_/g, '');
                     if (/^[\d_]+n$/.test(value)) {
-                        return BigInt(value.substr(0, value.length - 1).replace(/_/g, ''));
+                        return BigInt(value.slice(0, -1));
                     }
                     if (/^0[xX][\da-fA-F_]+n$/.test(value)) {
-                        return BigInt(value.substr(0, value.length - 1).replace(/_/g, ''));
+                        return BigInt(value.slice(0, -1));
                     }
                     if (key === 'blockheight') {
                         return Number(value);
                     }
-                    if (key === 'sender' || key === 'recipient' || key === 'amount') {
-                        return BigInt(value.replace(/_/g, ''));
-                    }
+                }
+                if (key === 'sender' || key === 'recipient' || key === 'amount' ||
+                    key === 'asset' || key === 'quantity') {
+                    return BigInt(value);
                 }
                 return value;
             });
@@ -60,6 +64,7 @@ export class SIMULATOR {
         Contracts.forEach(curContract => {
             curContract.run();
             curContract.dispatchEnqueuedTX();
+            curContract.saveMapOnBlockchain();
         });
         // Includes user transactions in blockchain. So they were not processed by contracts
         //  at this height.

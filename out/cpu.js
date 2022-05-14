@@ -25,10 +25,15 @@ export class CPU {
         if (account === undefined || currParts === null) {
             return null;
         }
-        account.balance -= Constants.stepfee * InstructionObj.stepFee;
+        // process exceptions for step fee
+        let regularStepFee = InstructionObj.stepFee;
+        if (currParts[2] === 'Issue_Asset') {
+            regularStepFee = 150000n;
+        }
+        account.balance -= Constants.stepfee * regularStepFee;
         if (account.balance < 0) {
             ContractState.frozen = true;
-            account.balance += Constants.stepfee * InstructionObj.stepFee;
+            account.balance += Constants.stepfee * regularStepFee;
             ContractState.previousBalance = account.balance;
             return true;
         }
@@ -128,23 +133,35 @@ CPU.cpuMicrocode = [
         stepFee: 0n,
         regex: /^\s*\^program\s+(\w+)\s+([\s\S]+)$/,
         execute(ContractState, regexParts) {
-            if (regexParts[1] === 'activationAmount') {
-                ContractState.activationAmount = BigInt(regexParts[2].trim());
-            }
-            else if (regexParts[1] === 'creator') {
-                ContractState.creator = BigInt(regexParts[2].trim());
-            }
-            else if (regexParts[1] === 'contract') {
-                ContractState.contract = BigInt(regexParts[2].trim());
-            }
-            else if (regexParts[1] === 'DataPages') {
-                ContractState.DataPages = Number(regexParts[2].trim());
-            }
-            else if (regexParts[1] === 'UserStackPages') {
-                ContractState.UserStackPages = Number(regexParts[2].trim());
-            }
-            else if (regexParts[1] === 'CodeStackPages') {
-                ContractState.CodeStackPages = Number(regexParts[2].trim());
+            switch (regexParts[1]) {
+                case 'activationAmount':
+                    ContractState.activationAmount = BigInt(regexParts[2].trim());
+                    break;
+                case 'creator':
+                    ContractState.creator = BigInt(regexParts[2].trim());
+                    break;
+                case 'contract':
+                    ContractState.contract = BigInt(regexParts[2].trim());
+                    break;
+                case 'DataPages':
+                    ContractState.DataPages = Number(regexParts[2].trim());
+                    break;
+                case 'UserStackPages':
+                    ContractState.UserStackPages = Number(regexParts[2].trim());
+                    break;
+                case 'CodeStackPages':
+                    ContractState.CodeStackPages = Number(regexParts[2].trim());
+                    break;
+                case 'codeHashId':
+                    ContractState.codeHashId = BigInt(regexParts[2].trim());
+                    break;
+                case 'description':
+                case 'name':
+                    break;
+                default:
+                    ContractState.dead = true;
+                    ContractState.exception = `Unknow macro ^program found: ${regexParts[1]}`;
+                    return true;
             }
             ContractState.instructionPointer = ContractState.getNextInstructionLine();
             return false;
@@ -737,6 +754,40 @@ CPU.cpuMicrocode = [
         }
     },
     {
+        name: 'POW_DAT',
+        stepFee: 1n,
+        regex: /^\s*POW\s+@(\w+)\s+\$(\w+)\s*$/,
+        execute(ContractState, regexParts) {
+            const variable1 = ContractState.Memory.find(mem => mem.varName === regexParts[1]);
+            const variable2 = ContractState.Memory.find(mem => mem.varName === regexParts[2]);
+            let val1, val2;
+            let result = 0;
+            if (variable1 === undefined)
+                val1 = 0;
+            else
+                val1 = Number(utils.unsigned2signed(variable1.value));
+            if (variable2 === undefined)
+                val2 = 0;
+            else
+                val2 = Number(utils.unsigned2signed(variable2.value)) / 1.0E8;
+            if (val1 > 0) {
+                result = Math.pow(val1, val2);
+                if (Number.isNaN(result) || result > Constants.numberMaxPositive) {
+                    result = 0;
+                }
+            }
+            result = Math.trunc(result);
+            if (variable1 === undefined) {
+                ContractState.Memory.push({ varName: regexParts[1], value: BigInt(result) });
+            }
+            else {
+                variable1.value = BigInt(result);
+            }
+            ContractState.instructionPointer = ContractState.getNextInstructionLine();
+            return true;
+        }
+    },
+    {
         name: 'JMP_ADR',
         stepFee: 1n,
         regex: /^\s*JMP\s+:(\w+)\s*$/,
@@ -850,6 +901,21 @@ CPU.cpuMicrocode = [
         }
     },
     {
+        name: 'SLP_IMD',
+        stepFee: 1n,
+        regex: /^\s*SLP\s*$/,
+        execute(ContractState, regexParts) {
+            ContractState.frozen = false;
+            ContractState.running = false;
+            ContractState.stopped = true;
+            ContractState.finished = false;
+            ContractState.previousBalance = Blockchain.getBalanceFrom(ContractState.contract);
+            ContractState.sleepUntilBlock = Blockchain.currentBlock + 1;
+            ContractState.instructionPointer = ContractState.getNextInstructionLine();
+            return true;
+        }
+    },
+    {
         name: 'FIZ_DAT',
         stepFee: 1n,
         regex: /^\s*FIZ\s+\$(\w+)\s*$/,
@@ -952,6 +1018,45 @@ CPU.cpuMicrocode = [
         execute(ContractState, regexParts) {
             ContractState.instructionPointer = ContractState.getNextInstructionLine();
             ContractState.PCS = ContractState.instructionPointer;
+            return true;
+        }
+    },
+    {
+        name: 'MDV_DAT',
+        stepFee: 1n,
+        regex: /^\s*MDV\s+@(\w+)\s+\$(\w+)\s+\$(\w+)\s*$/,
+        execute(ContractState, regexParts) {
+            const variable1 = ContractState.Memory.find(mem => mem.varName === regexParts[1]);
+            const variable2 = ContractState.Memory.find(mem => mem.varName === regexParts[2]);
+            const variable3 = ContractState.Memory.find(mem => mem.varName === regexParts[3]);
+            let val1, val2, val3, result;
+            if (variable1 === undefined)
+                val1 = 0n;
+            else
+                val1 = utils.unsigned2signed(variable1.value);
+            if (variable2 === undefined)
+                val2 = 0n;
+            else
+                val2 = utils.unsigned2signed(variable2.value);
+            if (variable3 === undefined)
+                val3 = 0n;
+            else
+                val3 = utils.unsigned2signed(variable3.value);
+            if (val3 === 0n) {
+                result = 0n;
+            }
+            else {
+                const bigVal = (val1 * val2) / val3;
+                // Converting to 64-bit long
+                result = bigVal & Constants.minus1;
+            }
+            if (variable1 === undefined) {
+                ContractState.Memory.push({ varName: regexParts[1], value: result });
+            }
+            else {
+                variable1.value = result;
+            }
+            ContractState.instructionPointer = ContractState.getNextInstructionLine();
             return true;
         }
     },

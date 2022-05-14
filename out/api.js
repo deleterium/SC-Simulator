@@ -1,7 +1,7 @@
 // Author: Rui Deleterium
 // Project: https://github.com/deleterium/SC-Simulator
 // License: BSD 3-Clause License
-import { Blockchain, Constants } from './index.js';
+import { Blockchain, Constants, Contracts } from './index.js';
 import { HashLib } from './hashlib.js';
 import { utils } from './utils.js';
 export class API_MICROCODE {
@@ -257,7 +257,16 @@ API_MICROCODE.EXT_FUN = [
                 ContractState.B = [0n, 0n, 0n, 0n];
                 return;
             }
-            ContractState.B = [tx.messageArr[0], tx.messageArr[1], tx.messageArr[2], tx.messageArr[3]];
+            const page = ContractState.A[1];
+            const start = Number(page * 4n);
+            for (let i = 0; i < 4; i++) {
+                if (tx.messageArr[start + i] === undefined) {
+                    ContractState.B[i] = 0n;
+                }
+                else {
+                    ContractState.B[i] = tx.messageArr[start + i];
+                }
+            }
         }
     },
     {
@@ -280,6 +289,22 @@ API_MICROCODE.EXT_FUN = [
         }
     },
     {
+        funName: 'B_To_Assets_Of_Tx_In_A',
+        opCode: 0x32,
+        execute(ContractState) {
+            const tx = Blockchain.transactions.find(TX => TX.recipient === ContractState.contract && TX.txid === ContractState.A[0]);
+            ContractState.B = [0n, 0n, 0n, 0n];
+            if (tx === undefined) {
+                return;
+            }
+            tx.tokens.forEach((tkn, idx) => {
+                if (idx < 4) {
+                    ContractState.B[idx] = tkn.asset;
+                }
+            });
+        }
+    },
+    {
         funName: 'send_All_to_Address_in_B',
         opCode: 0x32,
         execute(ContractState) {
@@ -293,6 +318,7 @@ API_MICROCODE.EXT_FUN = [
             ContractState.enqueuedTX.push({
                 recipient: ContractState.B[0],
                 amount: account.balance,
+                tokens: [],
                 messageArr: [0n, 0n, 0n, 0n]
             });
             account.balance = 0n;
@@ -319,6 +345,7 @@ API_MICROCODE.EXT_FUN = [
             ContractState.enqueuedTX.push({
                 recipient: ContractState.B[0],
                 amount: sendBalance,
+                tokens: [],
                 messageArr: [0n, 0n, 0n, 0n]
             });
         }
@@ -329,14 +356,151 @@ API_MICROCODE.EXT_FUN = [
         execute(ContractState) {
             const tx = ContractState.enqueuedTX.find(TX => TX.recipient === ContractState.B[0]);
             if (tx !== undefined) {
-                tx.messageArr = [ContractState.A[0], ContractState.A[1], ContractState.A[2], ContractState.A[3]];
+                if (tx.messageArr.length === 31 * 4) {
+                    tx.messageArr = [];
+                }
+                tx.messageArr.push(ContractState.A[0], ContractState.A[1], ContractState.A[2], ContractState.A[3]);
                 return;
             }
             ContractState.enqueuedTX.push({
                 recipient: ContractState.B[0],
                 amount: 0n,
+                tokens: [],
                 messageArr: [ContractState.A[0], ContractState.A[1], ContractState.A[2], ContractState.A[3]]
             });
+        }
+    },
+    {
+        funName: 'Set_Map_Value_Keys_In_A',
+        opCode: 0x32,
+        execute(ContractState) {
+            const found = ContractState.map.find(Obj => Obj.k1 === ContractState.A[0] && Obj.k2 === ContractState.A[1]);
+            if (found === undefined) {
+                ContractState.map.push({
+                    k1: ContractState.A[0],
+                    k2: ContractState.A[1],
+                    value: ContractState.A[3]
+                });
+                return;
+            }
+            found.value = ContractState.A[3];
+        }
+    },
+    {
+        funName: 'Mint_Asset',
+        opCode: 0x32,
+        execute(ContractState) {
+            const quantity = ContractState.B[0];
+            const asset = ContractState.B[1];
+            if (ContractState.issuedAssets.find(val => val === asset) === undefined) {
+                return;
+            }
+            const accountAsset = Blockchain.getAssetFromId(ContractState.contract, asset);
+            accountAsset.quantity += quantity;
+        }
+    },
+    {
+        funName: 'Distribute_To_Asset_Holders',
+        opCode: 0x32,
+        execute(ContractState) {
+            const holdersAssetMinimum = ContractState.B[0];
+            const holdersAsset = ContractState.B[1];
+            let amountToDistribute = ContractState.A[0];
+            const assetToDistribute = ContractState.A[2];
+            let quantityToDistribute = ContractState.A[3];
+            if (holdersAsset === 0n) {
+                return;
+            }
+            const preliminaryHoldersCount = Blockchain.getAssetHoldersCount(holdersAsset, holdersAssetMinimum);
+            if (preliminaryHoldersCount === 0n) {
+                return;
+            }
+            if (assetToDistribute !== 0n) {
+                const accountAsset = Blockchain.getAssetFromId(ContractState.contract, assetToDistribute);
+                if (quantityToDistribute > accountAsset.quantity) {
+                    quantityToDistribute = accountAsset.quantity;
+                }
+                accountAsset.quantity -= quantityToDistribute;
+            }
+            if (amountToDistribute > 0) {
+                const account = Blockchain.getAccountFromId(ContractState.contract);
+                if (amountToDistribute > account.balance) {
+                    amountToDistribute = account.balance;
+                }
+                account.balance -= amountToDistribute;
+            }
+            if (quantityToDistribute === 0n && amountToDistribute === 0n) {
+                return;
+            }
+            const holdersAndQuantity = Blockchain.getAllHolders(holdersAsset, holdersAssetMinimum);
+            if (holdersAndQuantity.length === 0) {
+                // Cancel distribution akward situation in contract tring to distribute all its own asset
+                //  but it is the only holder.
+                const account = Blockchain.getAccountFromId(ContractState.contract);
+                account.balance += amountToDistribute;
+                const accountAsset = Blockchain.getAssetFromId(ContractState.contract, assetToDistribute);
+                if (accountAsset) {
+                    accountAsset.quantity += quantityToDistribute;
+                }
+                return;
+            }
+            holdersAndQuantity.sort((rowA, rowB) => {
+                return Number(rowA[1] - rowB[1]);
+            });
+            const thisCirculatingSupply = holdersAndQuantity.reduce((prev, row) => {
+                return prev + row[1];
+            }, 0n);
+            let distributedAmount = 0n;
+            let distributedQuantity = 0n;
+            for (let i = 0; i < holdersAndQuantity.length; i++) {
+                const foundAccount = Blockchain.getAccountFromId(holdersAndQuantity[i][0]);
+                if (assetToDistribute !== 0n) {
+                    let quantityToHolder = (quantityToDistribute * holdersAndQuantity[i][1]) / thisCirculatingSupply;
+                    if (i === holdersAndQuantity.length - 1) {
+                        // all remaining to last one, the higher share holder
+                        quantityToHolder = quantityToDistribute - distributedQuantity;
+                    }
+                    const foundDistAsset = foundAccount.tokens.find(tkn => tkn.asset === assetToDistribute);
+                    if (foundDistAsset === undefined) {
+                        foundAccount.tokens.push({ asset: assetToDistribute, quantity: quantityToHolder });
+                    }
+                    else {
+                        foundDistAsset.quantity += quantityToHolder;
+                    }
+                    distributedQuantity += quantityToHolder;
+                }
+                if (amountToDistribute !== 0n) {
+                    let amountToHolder = (amountToDistribute * holdersAndQuantity[i][1]) / thisCirculatingSupply;
+                    if (i === holdersAndQuantity.length - 1) {
+                        // all remaining to last one, the higher share holder
+                        amountToHolder = amountToDistribute - distributedAmount;
+                    }
+                    foundAccount.balance += amountToHolder;
+                    distributedAmount += amountToHolder;
+                }
+            }
+            ContractState.enqueuedTX.push({
+                recipient: 0n,
+                amount: 0n,
+                tokens: [],
+                messageArr: [
+                    8386658473162862153n,
+                    7305804385234280992n,
+                    7214887984920753199n,
+                    8391721685706109801n,
+                    25701n
+                ]
+            });
+        }
+    },
+    {
+        funName: 'Put_Last_Block_GSig_In_A',
+        opCode: 0x32,
+        execute(ContractState) {
+            ContractState.A = [utils.getRandom64bit(),
+                utils.getRandom64bit(),
+                utils.getRandom64bit(),
+                utils.getRandom64bit()];
         }
     }
 ];
@@ -413,20 +577,45 @@ API_MICROCODE.EXT_FUN_DAT = [
         funName: 'send_to_Address_in_B',
         opCode: 0x33,
         execute(ContractState, value) {
-            const account = Blockchain.getAccountFromId(ContractState.contract);
-            if (value > account.balance) {
-                value = account.balance;
+            const recipient = ContractState.B[0];
+            const asset = ContractState.B[1];
+            if (value > Constants.maxPositive || value === 0n) {
+                return;
             }
-            account.balance -= value;
-            const tx = ContractState.enqueuedTX.find(TX => TX.recipient === ContractState.B[0]);
-            if (tx !== undefined) {
-                tx.amount += value;
+            if (asset === 0n) {
+                const account = Blockchain.getAccountFromId(ContractState.contract);
+                if (value > account.balance) {
+                    value = account.balance;
+                }
+                account.balance -= value;
+                const tx = ContractState.enqueuedTX.find(TX => TX.recipient === recipient && TX.tokens.length === 0);
+                if (tx !== undefined) {
+                    tx.amount += value;
+                    return;
+                }
+                ContractState.enqueuedTX.push({
+                    recipient: recipient,
+                    amount: value,
+                    tokens: [],
+                    messageArr: []
+                });
+                return;
+            }
+            const accountAsset = Blockchain.getAssetFromId(ContractState.contract, asset);
+            if (value > accountAsset.quantity) {
+                value = accountAsset.quantity;
+            }
+            accountAsset.quantity -= value;
+            const tx = ContractState.enqueuedTX.find(TX => TX.recipient === recipient && TX.tokens[0]?.asset === asset);
+            if (tx) {
+                tx.tokens[0].quantity += value;
                 return;
             }
             ContractState.enqueuedTX.push({
-                recipient: ContractState.B[0],
-                amount: value,
-                messageArr: [0n, 0n, 0n, 0n]
+                recipient: recipient,
+                amount: 0n,
+                tokens: [{ asset, quantity: value }],
+                messageArr: []
             });
         }
     }
@@ -526,22 +715,20 @@ API_MICROCODE.EXT_FUN_RET = [
         funName: 'check_A_Is_Zero',
         opCode: 0x35,
         execute(ContractState) {
-            // wrong boolean logic, but consistent to signum. Avoid using this function...
             if (ContractState.A.reduce((a, b) => a + b, 0n) === 0n) {
-                return 0n;
+                return 1n;
             }
-            return 1n;
+            return 0n;
         }
     },
     {
         funName: 'check_B_Is_Zero',
         opCode: 0x35,
         execute(ContractState) {
-            // wrong boolean logic, but consistent to signum. Avoid using this function...
             if (ContractState.B.reduce((a, b) => a + b, 0n) === 0n) {
-                return 0n;
+                return 1n;
             }
-            return 1n;
+            return 0n;
         }
     },
     {
@@ -597,6 +784,14 @@ API_MICROCODE.EXT_FUN_RET = [
         }
     },
     {
+        funName: 'Check_Sig_B_With_A',
+        opCode: 0x35,
+        execute(ContractState) {
+            // TODO
+            return 0n;
+        }
+    },
+    {
         funName: 'get_Block_Timestamp',
         opCode: 0x35,
         execute(ContractState) {
@@ -625,10 +820,7 @@ API_MICROCODE.EXT_FUN_RET = [
             if (tx === undefined || tx.recipient !== ContractState.contract) {
                 return Constants.minus1;
             }
-            if (tx.messageArr.reduce((a, b) => a + b, 0n) === 0n) {
-                return 0n;
-            }
-            return 1n;
+            return BigInt(tx.type);
         }
     },
     {
@@ -639,7 +831,12 @@ API_MICROCODE.EXT_FUN_RET = [
             if (tx === undefined || tx.recipient !== ContractState.contract) {
                 return Constants.minus1;
             }
-            return tx.amount - ContractState.activationAmount;
+            const asset = ContractState.A[1];
+            if (asset === 0n) {
+                return tx.amount - ContractState.activationAmount;
+            }
+            const foundAsset = tx.tokens.find(tkn => tkn.asset === asset);
+            return foundAsset?.quantity ?? 0n;
         }
     },
     {
@@ -677,7 +874,11 @@ API_MICROCODE.EXT_FUN_RET = [
         funName: 'get_Current_Balance',
         opCode: 0x35,
         execute(ContractState) {
-            return Blockchain.getBalanceFrom(ContractState.contract);
+            const asset = ContractState.B[1];
+            if (asset === 0n) {
+                return Blockchain.getBalanceFrom(ContractState.contract);
+            }
+            return Blockchain.getTokenQuantityFrom(ContractState.contract, asset);
         }
     },
     {
@@ -685,6 +886,93 @@ API_MICROCODE.EXT_FUN_RET = [
         opCode: 0x35,
         execute(ContractState) {
             return ContractState.previousBalance;
+        }
+    },
+    {
+        funName: 'Get_Code_Hash_Id',
+        opCode: 0x35,
+        execute(ContractState) {
+            const atId = ContractState.B[1];
+            if (atId === 0n || atId === ContractState.contract) {
+                return ContractState.codeHashId;
+            }
+            const foundContract = Contracts.find(Obj => Obj.contract === atId);
+            if (foundContract === undefined) {
+                return 0n;
+            }
+            return foundContract.codeHashId;
+        }
+    },
+    {
+        funName: 'Get_Map_Value_Keys_In_A',
+        opCode: 0x35,
+        execute(ContractState) {
+            let targetMap = ContractState.map;
+            const targetId = ContractState.A[2];
+            if (targetId !== 0n && targetId !== ContractState.contract) {
+                const contractMap = Blockchain.getMapFromId(targetId);
+                if (contractMap === undefined) {
+                    return 0n;
+                }
+                targetMap = contractMap.map;
+            }
+            const found = targetMap.find(Obj => Obj.k1 === ContractState.A[0] && Obj.k2 === ContractState.A[1]);
+            if (found === undefined) {
+                return 0n;
+            }
+            return found.value;
+        }
+    },
+    {
+        funName: 'Issue_Asset',
+        opCode: 0x35,
+        execute(ContractState) {
+            const tokenID = Constants.tokenID;
+            ContractState.issuedAssets.push(tokenID);
+            ContractState.enqueuedTX.push({
+                recipient: 0n,
+                amount: 0n,
+                tokens: [{ asset: tokenID, quantity: 0n }],
+                messageArr: [ContractState.A[0], ContractState.A[1], 0n, 0n]
+            });
+            // Incremented next mint asset id
+            Constants.tokenID++;
+            return tokenID;
+        }
+    },
+    {
+        funName: 'Get_Asset_Holders_Count',
+        opCode: 0x35,
+        execute(ContractState) {
+            const mininum = ContractState.B[0];
+            const asset = ContractState.B[1];
+            return Blockchain.getAssetHoldersCount(asset, mininum);
+        }
+    },
+    {
+        funName: 'Get_Activation_Fee',
+        opCode: 0x35,
+        execute(ContractState) {
+            const atId = ContractState.B[1];
+            if (atId === 0n || atId === ContractState.contract) {
+                return ContractState.activationAmount;
+            }
+            const foundContract = Contracts.find(Obj => Obj.contract === atId);
+            if (foundContract === undefined) {
+                return 0n;
+            }
+            return foundContract.activationAmount;
+        }
+    },
+    {
+        funName: 'Get_Asset_Circulating',
+        opCode: 0x35,
+        execute(ContractState) {
+            const asset = ContractState.B[1];
+            if (asset === 0n) {
+                return 0n;
+            }
+            return Blockchain.getAssetCirculating(asset);
         }
     }
 ];
