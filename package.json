@@ -6,17 +6,19 @@
     "private": true,
     "homepage": "https://github.com/deleterium/SC-Simulator",
     "scripts": {
-        "dev": "npx tsc && npx light-server -s . -p 7000 --no-reload",
+        "dev": "TARGET=dev node esbuild.config.js && npx light-server -s . -p 7000 --no-reload",
         "start": "npx light-server -s . -p 7000 --no-reload",
         "lint": "npx eslint try.js src/*.ts",
-        "build": "npx tsc"
+        "build": "npm run lint && node esbuild.config.js"
     },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^4.32.0",
         "@typescript-eslint/parser": "^4.32.0",
+        "esbuild": "^0.14.39",
         "eslint": "^7.32.0",
         "eslint-config-standard": "^16.0.3",
         "light-server": "^2.9.1",
+        "smartc-assembly-highlight": "^1.0.2",
         "typescript": "^4.4.3"
     }
 }

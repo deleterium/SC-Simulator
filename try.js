@@ -1,6 +1,6 @@
-import { Blockchain, Contracts, Simulator } from './out/index.js'
-import { utils } from './out/utils.js'
-import sah from 'https://cdn.jsdelivr.net/npm/smartc-assembly-highlight/dist/index.js'
+import { Blockchain, Contracts, Simulator } from './src/index'
+import { utils } from './src/utils'
+import sah from 'smartc-assembly-highlight'
 
 // Author: Rui Deleterium
 // Project: https://github.com/deleterium/SC-Simulator
