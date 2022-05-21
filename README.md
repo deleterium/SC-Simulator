@@ -2,8 +2,8 @@
 Smart contracts simulator and debugger for Signum
 
 ## Usage
-[Run it](https://deleterium.github.io/SC-Simulator/try.html) on gitpages. Load example to try it with a simple contract.
-For big programs it is possible to detach all fieldsets to have a different view, more static.
+[Run it](https://deleterium.deleterium.info/sc-simulator) on my personal page. Optionally clone the repository, and run the application with `npm ci`, then `npm run build` and then `npm run start`. Load example to try it with a simple contract.
+For big programs it is possible to detach all fieldsets to have a different view, more static. 
 
 ### Transactions
 Transactions are JSON text to be parsed every time a block is forged and an example is provided on first load. You can prepare all transactions or can edit many times the same to get desired result. Remember to match tx.blockheight to Blockchain.currentBlock plus one. Note shortcuts for buttons via accesskeys. Use the following attributes:
