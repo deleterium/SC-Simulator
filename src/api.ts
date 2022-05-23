@@ -306,7 +306,17 @@ export class API_MICROCODE {
             funName: 'B_to_Address_of_Creator',
             opCode: 0x32,
             execute (ContractState) {
-                ContractState.B = [ContractState.creator, 0n, 0n, 0n]
+                const contractId = ContractState.B[1]
+                ContractState.B = [0n, 0n, 0n, 0n]
+                if (contractId === 0n) {
+                    ContractState.B[0] = ContractState.creator
+                    return
+                }
+                const targetContract = Contracts.find(Obj => Obj.contract === contractId)
+                if (targetContract === undefined) {
+                    return
+                }
+                ContractState.B[0] = targetContract.creator
             }
         },
         {
