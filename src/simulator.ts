@@ -112,6 +112,7 @@ export class SIMULATOR {
             return 'No contract deployed..'
         }
 
+        bpline--
         if (Contracts[this.currSlotContract].getNextInstructionLine(bpline) !== bpline) {
             return `Line ${bpline} is not an instruction. Breakpoint NOT added.`
         }
