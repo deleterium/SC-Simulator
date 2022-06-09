@@ -115,7 +115,7 @@ export class CONTRACT {
                 this.frozen === false &&
                 bp === null)
         if (bp !== null) {
-            return `Stopped on breakpoint ${bp}.`
+            return `Stopped on breakpoint ${bp + 1}.`
         } else {
             return 'Run end. Check status. Forge new block to continue.'
         }
@@ -150,7 +150,7 @@ export class CONTRACT {
             }
         })
         if (bp !== null) {
-            return `Reached breakpoint ${bp}.`
+            return `Reached breakpoint ${bp + 1}.`
         }
         return ''
     }
