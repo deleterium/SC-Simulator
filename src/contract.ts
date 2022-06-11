@@ -233,6 +233,10 @@ export class CONTRACT {
             let type = 22
             if (tx.tokens.length !== 0) {
                 type = 2
+                tx.tokens.forEach(Tkn => {
+                    const accountAsset = Blockchain.getAssetFromId(tx.recipient, Tkn.asset)
+                    accountAsset.quantity += Tkn.quantity
+                })
             }
 
             Blockchain.transactions.push({
