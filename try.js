@@ -41,6 +41,7 @@ window.onload = function () {
     document.getElementById('memory_legend').addEventListener('click', detachMemory)
     document.getElementById('blockchain_legend').addEventListener('click', detachBlockchain)
     document.getElementById('transaction_legend').addEventListener('click', detachTransaction)
+    document.getElementById('detachAll').addEventListener('click', detachAll)
 
     // Buttons to default
     document.getElementById('step').disabled = true
@@ -590,6 +591,14 @@ function detachBlockchain () {
     document.getElementById('blockchain_fieldset').style.display = 'none'
 }
 /* eslint-enable no-new */
+
+function detachAll () {
+    detachSource()
+    detachActions()
+    detachMemory()
+    detachBlockchain()
+    detachTransaction()
+}
 
 // Function to load a simple example
 function loadExample () {
