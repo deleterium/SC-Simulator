@@ -8,10 +8,12 @@
     <link rel="stylesheet" href="style.css">
     <script type="module" src="lib/index.js"></script>
     <script src="3rd-party/winbox.bundle.js"></script>
+    <script src="3rd-party/highlight.min.js"></script>
+    <link rel="stylesheet" href="3rd-party/tomorrow.css">
 </head>
 
 <body>
-    <h1 class="gdrow1 gdcol12 gmrow1">SC Simulator - Assembly simulator and debugger for Signum</h1>
+    <h1 class="gdrow1 gdcol12 gmrow1">SC Simulator - DEV - Simulator and debugger for SmartC</h1>
     <fieldset id="source_fieldset" class="gdrow26 gdcol1 gmrow2"><legend id="source_legend">&#10064; Source code:</legend>
         <div id="source_window" class="div_window_source">
             <textarea id="source-code" placeholder="Paste assembly code or load example!" class="inc_height" spellcheck="false" wrap="soft"></textarea>
@@ -22,17 +24,17 @@
 
     <fieldset id="actions_fieldset" class="gdrow2 gdcol2 gmrow3"><legend id="actions_legend">&#10064; Actions:</legend>
         <div id="actions_window" class="div_window_grid">
-            <button id="step" accesskey="s" title="Alt+Shift+s Advance one instruction" class="btn_class grow1 gcol1" disabled="true"><u>S</u>tep</button><br />
+            <button id="stepinto" accesskey="s" title="Alt+Shift+s Advance one instruction" class="btn_class grow1 gcol1" disabled="true"><u>S</u>tep into</button><br />
             <button id="togSource" title="Toggle Source/Color mode" class="btn_class grow1 gcol2">Tog source</button><br />
             <button id="deploy" title="Deploy / reset" class="btn_class grow2 gcol2">Deploy</button>
             <button id="forge" accesskey="f" class="btn_class grow1 gcol4" title="Forge one block" disabled="true"><u>F</u>orge</button>
             <button id="run" accesskey="r" title="Alt+Shift+r - Run until end (one block)" class="btn_class grow1 gcol3" disabled="true"><u>R</u>un</button>
-            <button id="autostep" accesskey="1" title="Alt+Shift+1 Automatic step instructions" class="btn_class grow2 gcol1" disabled="true">Auto-step</button>
+            <button id="stepover" accesskey="1" title="Alt+Shift+1 Advance but not enter functions" class="btn_class grow2 gcol1" disabled="true">Step over</button>
             <button id="addbp" class="btn_class grow2 gcol3" title="Add breakpoint (or double click on line)" disabled="true">Add BP</button>
-            <button id="loadExample" title="Load example" class="btn_class grow2 gcol4">Example</button>
-            <button id="loadSlot" title="Load contract slot" class="btn_class grow3 gcol1" disabled="true">Load Slot</button>
-            <button id="detachAll" accesskey="a" style="display: none;">Hidden Button</button>
-            <span class="grow3 gcol25">Simulator said: <output id="simsaid">Contract not loaded</output></span>
+            <button id="stepout" title="Return from current function" class="btn_class grow3 gcol1">Step out</button>
+            <button id="loadSlot" title="Load contract slot" class="btn_class grow2 gcol4" disabled="true">Load Slot</button>
+            <button id="detachAll" accesskey="a" class="btn_class grow3 gcol4">Detach all</button>
+            <span class="grow3 gcol24">Simulator said: <output id="simsaid">Contract not loaded</output></span>
         </div>
     </fieldset>
 

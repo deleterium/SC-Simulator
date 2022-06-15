@@ -25,7 +25,7 @@ export class CPU {
             stepFee: 0n,
             regex: /^\s*$/,
             execute (ContractState, regexParts) {
-                if (ContractState.instructionPointer >= ContractState.sourceCode.length) {
+                if (ContractState.instructionPointer >= ContractState.asmCodeArr.length) {
                     ContractState.instructionPointer = ContractState.PCS
                     return true
                 }
@@ -495,7 +495,7 @@ export class CPU {
                 }
 
                 const customRegex = new RegExp('^\\s*(' + regexParts[1] + '):\\s*$')
-                const destination = ContractState.sourceCode.findIndex(line => customRegex.exec(line) !== null)
+                const destination = ContractState.asmCodeArr.findIndex(line => customRegex.exec(line) !== null)
                 if (destination === -1) {
                     ContractState.dead = true
                     ContractState.exception = "Jump Subroutine destination label '" + regexParts[1] + "' not found"
@@ -718,7 +718,7 @@ export class CPU {
             regex: /^\s*JMP\s+:(\w+)\s*$/,
             execute (ContractState, regexParts) {
                 const customRegex = new RegExp('^\\s*(' + regexParts[1] + '):\\s*$')
-                const destination = ContractState.sourceCode.findIndex(line => customRegex.exec(line) !== null)
+                const destination = ContractState.asmCodeArr.findIndex(line => customRegex.exec(line) !== null)
                 if (destination === -1) {
                 // only happens in simulator
                     ContractState.dead = true
@@ -743,7 +743,7 @@ export class CPU {
                 }
 
                 const customRegex = new RegExp('^\\s*(' + regexParts[3] + '):\\s*$')
-                const destination = ContractState.sourceCode.findIndex(line => customRegex.exec(line) !== null)
+                const destination = ContractState.asmCodeArr.findIndex(line => customRegex.exec(line) !== null)
                 if (destination === -1) {
                     ContractState.dead = true
                     ContractState.exception = "Jump destination label '" + regexParts[3] + "' not found"
@@ -779,7 +779,7 @@ export class CPU {
                 }
 
                 const customRegex = new RegExp('^\\s*(' + regexParts[4] + '):\\s*$')
-                const destination = ContractState.sourceCode.findIndex(line => customRegex.exec(line) !== null)
+                const destination = ContractState.asmCodeArr.findIndex(line => customRegex.exec(line) !== null)
                 if (destination === -1) {
                     ContractState.dead = true
                     ContractState.exception = "Jump destination label '" + regexParts[3] + "' not found"
@@ -927,7 +927,7 @@ export class CPU {
             regex: /^\s*ERR\s+:(\w+)\s*$/,
             execute (ContractState, regexParts) {
                 const customRegex = new RegExp('^\\s*(' + regexParts[1] + '):\\s*$')
-                const destination = ContractState.sourceCode.findIndex(line => customRegex.exec(line) !== null)
+                const destination = ContractState.asmCodeArr.findIndex(line => customRegex.exec(line) !== null)
                 if (destination === -1) {
                     ContractState.dead = true
                     ContractState.exception = "ERR destination label '" + regexParts[1] + "' not found"
@@ -1137,7 +1137,7 @@ export class CPU {
     //  false if line is valid but nothing executed
     //  or null if invalid line
     static cpu (ContractState: CONTRACT) {
-        const currLine = ContractState.sourceCode[ContractState.instructionPointer]
+        const currLine = ContractState.asmCodeArr[ContractState.instructionPointer]
 
         const InstructionObj = this.cpuMicrocode.find(currCode => {
             if (currCode.regex.exec(currLine) === null) {
@@ -1179,7 +1179,7 @@ export class CPU {
     static cpuDeploy (ContractState: CONTRACT) {
         let lastExecResult: RegExpExecArray | null, currCode: CPU_MICROCODE | undefined
 
-        ContractState.sourceCode.forEach(line => {
+        ContractState.asmCodeArr.forEach(line => {
             if (/^\s*\^.*/.exec(line) !== null) {
                 // visit all compiler directives to deploy contract
                 currCode = CPU.cpuMicrocode.find(instr => {

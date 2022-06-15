@@ -1,17 +1,15 @@
 import { Blockchain, Contracts, Simulator } from './src/index'
 import { utils } from './src/utils'
 import sah from 'smartc-assembly-highlight'
+import { SmartC } from 'smartc-signum-compiler'
 
 // Author: Rui Deleterium
 // Project: https://github.com/deleterium/SC-Simulator
 // License: BSD 3-Clause License
 
-/* WinBox global is defined on file ./3rd-party/winbox.bundle.js */
-/* global WinBox */
-
-let autoStepTimer
-let autoStepRunning = false
-const autoStepDelay = 200
+/* WinBox global is defined on file ./3rd-party/winbox.bundle.js
+   hljs is defined on file ./3rd-party/highligth.min.js */
+/* global WinBox hljs */
 
 sah.Config.preLine = "<div id='codeline%line%' class='line'>"
 sah.Config.postLine = '</div>'
@@ -26,13 +24,13 @@ window.onload = function () {
     scode.addEventListener('mouseup', textKeyUp)
     scode.addEventListener('paste', pasteEvent)
 
-    document.getElementById('step').addEventListener('click', stepContract)
+    document.getElementById('stepinto').addEventListener('click', stepIntoContract)
     document.getElementById('forge').addEventListener('click', forgeBlock)
     document.getElementById('deploy').addEventListener('click', deploy)
     document.getElementById('addbp').addEventListener('click', addBreakPoint)
     document.getElementById('run').addEventListener('click', runContract)
-    document.getElementById('loadExample').addEventListener('click', loadExample)
-    document.getElementById('autostep').addEventListener('click', autoStepContract, false)
+    document.getElementById('stepout').addEventListener('click', stepOutContract)
+    document.getElementById('stepover').addEventListener('click', stepOverContract)
     document.getElementById('togSource').addEventListener('click', toggleSource)
     document.getElementById('loadSlot').addEventListener('click', loadSlot)
 
@@ -44,14 +42,53 @@ window.onload = function () {
     document.getElementById('detachAll').addEventListener('click', detachAll)
 
     // Buttons to default
-    document.getElementById('step').disabled = true
+    document.getElementById('stepinto').disabled = true
     document.getElementById('togSource').disabled = false
     document.getElementById('forge').disabled = true
     document.getElementById('run').disabled = true
-    document.getElementById('autostep').disabled = true
+    document.getElementById('stepover').disabled = true
+    document.getElementById('stepout').disabled = true
     document.getElementById('addbp').disabled = true
-    document.getElementById('loadExample').disabled = false
     document.getElementById('loadSlot').disabled = true
+
+    hljs.addPlugin({
+        'after:highlight': (result) => {
+            let retString = ''
+            const htmlLines = result.value.split('\n')
+            let spanStack = []
+            retString += htmlLines.map((content, index) => {
+                let startSpanIndex, endSpanIndex
+                let needle = 0
+                content = spanStack.join('') + content
+                spanStack = []
+                do {
+                    const remainingContent = content.slice(needle)
+                    startSpanIndex = remainingContent.indexOf('<span')
+                    endSpanIndex = remainingContent.indexOf('</span')
+                    if (startSpanIndex === -1 && endSpanIndex === -1) {
+                        break
+                    }
+                    if (endSpanIndex === -1 || (startSpanIndex !== -1 && startSpanIndex < endSpanIndex)) {
+                        const nextSpan = /<span .+?>/.exec(remainingContent)
+                        if (nextSpan === null) {
+                            // never: but ensure no exception is raised if it happens.
+                            break
+                        }
+                        spanStack.push(nextSpan[0])
+                        needle += startSpanIndex + nextSpan[0].length
+                    } else {
+                        spanStack.pop()
+                        needle += endSpanIndex + 1
+                    }
+                } while (true)
+                if (spanStack.length > 0) {
+                    content += Array(spanStack.length).fill('</span>').join('')
+                }
+                return `<div id="codeline${index + 1}" class="line">${content}</div>`
+            }).join('')
+            result.value = retString
+        }
+    })
 
     textKeyUp()
 }
@@ -116,20 +153,14 @@ function clickBreakpoint () {
 
 // Runs contract for current block (until end or breakpoint found)
 function runContract () {
-    autoStepRunning = false
-    clearTimeout(autoStepTimer)
-
     const retString = Simulator.runSlotContract()
     inform(retString)
     updatePage()
 }
 
-// Runs only one instruction
-function stepContract () {
-    autoStepRunning = false
-    clearTimeout(autoStepTimer)
-
-    const retString = Simulator.stepSlotContract()
+// Runs only one line stepping into calls
+function stepIntoContract () {
+    const retString = Simulator.stepIntoSlotContract()
     if (retString === '') {
         inform('Step done.')
     } else {
@@ -138,26 +169,23 @@ function stepContract () {
     updatePage()
 }
 
-// Runs steps with timeInterval
-function autoStepContract (click) {
-    if (Simulator.getNumberOfContracts() === -1) {
-        inform('Deploy contract before auto-stepping..')
-        return
-    }
-    if (click !== undefined) {
-        autoStepRunning = !autoStepRunning
-    }
-    if (autoStepRunning === false) {
-        clearTimeout(autoStepTimer)
-        inform('Auto-step interrupted')
-        return
-    }
-    const retString = Simulator.stepSlotContract()
+// Runs only one line stepping over calls
+function stepOverContract (click) {
+    const retString = Simulator.stepOverSlotContract()
     if (retString === '') {
-        autoStepTimer = setTimeout(autoStepContract, autoStepDelay)
-        inform('Auto-stepping...')
+        inform('Step done.')
     } else {
-        autoStepRunning = false
+        inform(retString)
+    }
+    updatePage()
+}
+
+// Runs lines until turn back one level in code stack
+function stepOutContract (click) {
+    const retString = Simulator.stepOutSlotContract()
+    if (retString === '') {
+        inform('Step done.')
+    } else {
         inform(retString)
     }
     updatePage()
@@ -177,30 +205,38 @@ function setColorSource () {
         inform('No contract deployed.')
         return
     }
-    colorDOM.innerHTML = sah.colorText(Contracts[Simulator.currSlotContract].sourceCode.join('\n'))
+
     sourceDOM.style.display = 'none'
     colorDOM.style.display = 'block'
     document.getElementById('deploy').disabled = true
     document.getElementById('forge').disabled = false
     document.getElementById('run').disabled = false
-    document.getElementById('autostep').disabled = false
-    document.getElementById('step').disabled = false
+    document.getElementById('stepover').disabled = false
+    document.getElementById('stepinto').disabled = false
+    document.getElementById('stepout').disabled = false
     document.getElementById('addbp').disabled = false
 
-    let collection = document.getElementsByClassName('asmVariable')
-    for (let i = 0; i < collection.length; i++) {
-        collection[i].addEventListener('mouseover', showInspector)
-        collection[i].addEventListener('mouseout', hideInspector)
-    }
-    collection = document.getElementsByClassName('asmNumber')
-    for (let i = 0; i < collection.length; i++) {
-        collection[i].addEventListener('mouseover', showInspector)
-        collection[i].addEventListener('mouseout', hideInspector)
-    }
-    collection = document.getElementsByClassName('asmLabel')
-    for (let i = 0; i < collection.length; i++) {
-        collection[i].addEventListener('mouseover', showLabel)
-        collection[i].addEventListener('mouseout', hideInspector)
+    let collection
+    if (Contracts[Simulator.currSlotContract].cCodeArr.length > 1) {
+        colorDOM.innerHTML = hljs.highlight(Contracts[Simulator.currSlotContract].cCodeArr.join('\n'), { language: 'c' }).value
+    } else {
+        colorDOM.innerHTML = sah.colorText(Contracts[Simulator.currSlotContract].asmCodeArr.join('\n'))
+
+        collection = document.getElementsByClassName('asmVariable')
+        for (let i = 0; i < collection.length; i++) {
+            collection[i].addEventListener('mouseover', showInspector)
+            collection[i].addEventListener('mouseout', hideInspector)
+        }
+        collection = document.getElementsByClassName('asmNumber')
+        for (let i = 0; i < collection.length; i++) {
+            collection[i].addEventListener('mouseover', showInspector)
+            collection[i].addEventListener('mouseout', hideInspector)
+        }
+        collection = document.getElementsByClassName('asmLabel')
+        for (let i = 0; i < collection.length; i++) {
+            collection[i].addEventListener('mouseover', showLabel)
+            collection[i].addEventListener('mouseout', hideInspector)
+        }
     }
     collection = document.getElementsByClassName('line')
     for (let i = 0; i < collection.length; i++) {
@@ -229,11 +265,16 @@ function setSourceCode () {
     document.getElementById('deploy').disabled = false
     document.getElementById('forge').disabled = true
     document.getElementById('run').disabled = true
-    document.getElementById('autostep').disabled = true
-    document.getElementById('step').disabled = true
+    document.getElementById('stepover').disabled = true
+    document.getElementById('stepinto').disabled = true
+    document.getElementById('stepout').disabled = true
     document.getElementById('addbp').disabled = true
 
-    sourceDOM.value = Contracts[Simulator.currSlotContract].sourceCode.join('\n')
+    if (Contracts[Simulator.currSlotContract].cCodeArr.length > 1) {
+        sourceDOM.value = Contracts[Simulator.currSlotContract].cCodeArr.join('\n')
+    } else {
+        sourceDOM.value = Contracts[Simulator.currSlotContract].asmCodeArr.join('\n')
+    }
     inform('You can edit/change source code.')
     textKeyUp()
 }
@@ -275,13 +316,49 @@ function deploy () {
         inform('Could not load an empty contract.')
         return
     }
-    Simulator.deploy(source)
-    inform('Contract id ' + Contracts[Contracts.length - 1].contract.toString(10) + ' deployed on slot ' + (Contracts.length - 1) + '. Ready to run')
-
+    let asmCompilationResult = ''
+    let cCompilationResult = ''
+    const asmCompiler = new SmartC({ language: 'Assembly', sourceCode: source })
+    const cCompiler = new SmartC({ language: 'C', sourceCode: source + '\n#pragma verboseAssembly true\n' })
+    try {
+        asmCompiler.compile()
+    } catch (error) {
+        asmCompilationResult = error.message
+    }
+    try {
+        cCompiler.compile()
+    } catch (error) {
+        cCompilationResult = error.message
+    }
+    if (cCompilationResult.length !== 0 && asmCompilationResult.length !== 0) {
+        inform('Compilation failed. C error: ' +
+            cCompilationResult.message +
+            ' Assembly error: ' +
+            asmCompilationResult
+        )
+        return
+    }
+    if (cCompilationResult.length === 0) {
+        // Successful compiled c code
+        Simulator.deploy(cCompiler.getAssemblyCode(), source)
+        inform('C contract successfully compiled and deployed with id ' +
+            Contracts[Contracts.length - 1].contract.toString(10) +
+            ' on slot ' +
+            (Contracts.length - 1) +
+            '. Ready to run'
+        )
+    } else {
+        Simulator.deploy(asmCompiler.getAssemblyCode())
+        inform('Assembly contract successfully deployed with id ' +
+            Contracts[Contracts.length - 1].contract.toString(10) +
+            ' on slot ' +
+            (Contracts.length - 1) +
+            '. Ready to run'
+        )
+    }
     if (Contracts.length > 1) {
         document.getElementById('loadSlot').disabled = false
     }
-    document.getElementById('loadExample').disabled = true
 }
 
 // Handles apearing/hiding inspector floating div and update its contents (for variables/numbers)
@@ -342,7 +419,7 @@ function showLabel () {
         return
     }
     const customRegex = new RegExp('^\\s*(' + textLabel + '):\\s*$')
-    const destination = ContractState.sourceCode.findIndex(line => customRegex.exec(line) !== null)
+    const destination = ContractState.asmCodeArr.findIndex(line => customRegex.exec(line) !== null)
     const content = '<table><tbody><tr><th>' + textLabel + '</th></tr>' +
             '<tr><td>Line ' + destination + '</td></tr>' +
             '</tbody></table>'
@@ -367,6 +444,11 @@ function updatePage () {
     }
     const ContractState = Contracts[Simulator.currSlotContract]
     // Boolean properties
+    let assembly = true
+    if (ContractState.cCodeArr.length > 1) {
+        assembly = false
+    }
+
     output += '<table class="table-all"><tbody><tr>'
 
     if (ContractState.frozen) output += '<td class="taleft updatedVal">Frozen: '
@@ -391,7 +473,11 @@ function updatePage () {
 
     output += '</tr><tr>'
     output += '<td colspan="2"  class="taleft">Balance: ' + utils.long2stringBalance(Blockchain.getBalanceFrom(ContractState.contract)) + '</td>'
-    output += '<td title="Instruction pointer (next line)">IP: ' + (ContractState.instructionPointer + 1).toString() + '</td>'
+    output += '<td title="Instruction pointer (next line)">IP: ' + (ContractState.instructionPointer + 1).toString()
+    if (ContractState.cToAsmMap[ContractState.instructionPointer] !== ContractState.instructionPointer) {
+        output += ' - line: ' + ContractState.cToAsmMap[ContractState.instructionPointer].toString(10)
+    }
+    output += '</td>'
     output += '<td> ' + '' + '</td>'
     /* output += '<td>: '+'' + '</td>' */
     output += '<td> ' + '' + '</td>'
@@ -471,9 +557,14 @@ function updatePage () {
     if (line[0] !== undefined) {
         line[0].className = line[0].className.replace('activeline', '')
     }
-    line = document.getElementById('codeline' + (ContractState.instructionPointer + 1))
+    let lineToHighlight = ContractState.instructionPointer + 1
+    if (assembly === false) {
+        lineToHighlight = ContractState.cToAsmMap[ContractState.instructionPointer]
+    }
+    line = document.getElementById('codeline' + lineToHighlight)
     if (line !== null) {
         line.className += ' activeline'
+        line.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
 
     // Blockchain status
@@ -501,7 +592,7 @@ function textKeyUp () {
 // Handles showing objects
 function stringifyReplacer (key, value) {
     if (key === 'Memory' ||
-        key === 'sourceCode' ||
+        key === 'asmCodeArr' ||
         key === 'frozen' ||
         key === 'running' ||
         key === 'stopped' ||
@@ -509,7 +600,9 @@ function stringifyReplacer (key, value) {
         key === 'dead' ||
         key === 'A' ||
         key === 'B' ||
-        key === 'instructionPointer') {
+        key === 'instructionPointer' ||
+        key === 'cToAsmMap' ||
+        key === 'cCodeArr') {
         return
     }
     if (key === 'balance' || key === 'amount' || key === 'quantity') {
@@ -598,97 +691,4 @@ function detachAll () {
     detachMemory()
     detachBlockchain()
     detachTransaction()
-}
-
-// Function to load a simple example
-function loadExample () {
-    if (Simulator.currSlotContract !== undefined) {
-        inform('Can not load example if contract is deployed...')
-        return
-    }
-
-    document.getElementById('source-code').value = `^declare r0
-^declare r1
-^declare n8
-^declare n10
-^declare n0xff
-^declare numbers
-^const SET @numbers #0000000000000006
-^declare numbers_0
-^declare numbers_1
-^declare numbers_2
-^declare numbers_3
-^declare text
-^const SET @text #000000000000000b
-^declare text_0
-^declare text_1
-^declare text_2
-^declare text_3
-^declare i
-^declare atoi_val
-^declare atoi_ret
-^declare atoi_chr
-
-SET @n8 #0000000000000008
-SET @n10 #000000000000000a
-SET @n0xff #00000000000000ff
-^const SET @text_0 #0000000000373231
-^const SET @text_1 #0000000039393939
-^const SET @text_2 #0000000030313031
-^const SET @text_3 #0000363534333231
-JMP :__fn_main
-
-__fn_atoi:
-POP @atoi_val
-CLR @atoi_ret
-__loop1_continue:
-SET @atoi_chr #00000000000000ff
-AND @atoi_chr $atoi_val
-SET @r0 #0000000000000030
-SUB @atoi_chr $r0
-CLR @r0
-BLT $atoi_chr $r0 :__if2_start
-BGE $atoi_chr $n10 :__if2_start
-JMP :__if2_endif
-__if2_start:
-JMP :__loop1_break
-__if2_endif:
-MUL @atoi_ret $n10
-ADD @atoi_ret $atoi_chr
-SHR @atoi_val $n8
-JMP :__loop1_continue
-__loop1_break:
-PSH $atoi_ret
-RET
-
-__fn_main:
-PCS
-CLR @i
-__loop4_condition:
-SET @r0 #0000000000000004
-BGE $i $r0 :__loop4_break
-__loop4_start:
-SET @r0 $($text + $i)
-PSH $r0
-JSR :__fn_atoi
-POP @r0
-SET @($numbers + $i) $r0
-STP
-__loop4_continue:
-INC @i
-JMP :__loop4_condition
-__loop4_break:
-CLR @i
-__loop5_condition:
-SET @r0 #0000000000000004
-BGE $i $r0 :__loop5_break
-__loop5_start:
-CLR @r0
-SET @($numbers + $i) $r0
-__loop5_continue:
-INC @i
-JMP :__loop5_condition
-__loop5_break:
-FIN`
-    textKeyUp()
 }

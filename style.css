@@ -92,6 +92,8 @@ label:hover                      { background: #ddf; }
 #color_code {
     counter-reset: line;
     display: none;
+    white-space: pre-wrap;
+    word-wrap: anywhere;
 }
 #source-code, #color_code {
 	/* background: #fafbfc; */

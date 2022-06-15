@@ -53,9 +53,11 @@ export class CONTRACT {
     issuedAssets: bigint[]
     PCS: number
     ERR: number | null
-    sourceCode: string[]
+    asmCodeArr: string[]
+    cCodeArr: string[]
+    cToAsmMap: number[]
 
-    constructor (asmSourceCode: string) {
+    constructor (asmSourceCode: string, cSourceCode: string = '') {
         this.instructionPointer = 0
         this.sleepUntilBlock = 0
         this.previousBalance = 0n
@@ -83,11 +85,29 @@ export class CONTRACT {
         this.issuedAssets = []
         this.PCS = 0
         this.ERR = null
-        this.sourceCode = asmSourceCode.split('\n')
+        this.asmCodeArr = asmSourceCode.split('\n')
+        this.cCodeArr = cSourceCode.split('\n')
+        this.cToAsmMap = this.buildMap()
         CPU.cpuDeploy(this)
         while (Blockchain.accounts.find(acc => acc.id === this.contract) !== undefined) {
             this.contract++
         }
+    }
+
+    buildMap () : number[] {
+        let currCLine = 1
+        const cMap = this.asmCodeArr.map((line) => {
+            const verboseAssembly = /^\s*\^comment line (\d+)\s+/.exec(line)
+            if (verboseAssembly !== null) {
+                currCLine = Number(verboseAssembly[1])
+            }
+            return currCLine
+        })
+        if (currCLine === 1) {
+            // verboseAssembly not active, debug as assembly
+            return this.asmCodeArr.map((line, idx) => idx)
+        }
+        return cMap
     }
 
     run (bps: number[] = []): string {
@@ -267,8 +287,8 @@ export class CONTRACT {
      *  to trigger dead state on next execution try.
      */
     getNextInstructionLine (line: number = this.instructionPointer + 1): number {
-        for (;line < this.sourceCode.length; line++) {
-            const instr = this.sourceCode[line]
+        for (;line < this.asmCodeArr.length; line++) {
+            const instr = this.asmCodeArr[line]
             if (/^\s*$/.exec(instr) !== null ||
                  /^\s*(\w+):\s*$/.exec(instr) !== null ||
                  /^\s*\^.*/.exec(instr) !== null) {
