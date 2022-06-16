@@ -16,7 +16,7 @@
     <h1 class="gdrow1 gdcol12 gmrow1">SC Simulator - DEV - Simulator and debugger for SmartC</h1>
     <fieldset id="source_fieldset" class="gdrow26 gdcol1 gmrow2"><legend id="source_legend">&#10064; Source code:</legend>
         <div id="source_window" class="div_window_source">
-            <textarea id="source-code" placeholder="Paste assembly code or load example!" class="inc_height" spellcheck="false" wrap="soft"></textarea>
+            <textarea id="source-code" placeholder="Paste C or assembly code" class="inc_height" spellcheck="false" wrap="soft"></textarea>
             <div id="color_code"></div>
             <div id="inspectorID"></div>
         </div>
@@ -43,7 +43,7 @@
         </div>
     </fieldset>
 
-    <fieldset id="blockchain_fieldset" class="gdrow4 gdcol2 gmrow5"><legend id="blockchain_legend">&#10064; Blochain status:</legend>
+    <fieldset id="blockchain_fieldset" class="gdrow4 gdcol2 gmrow5"><legend id="blockchain_legend">&#10064; Blockchain status:</legend>
         <div id="blockchain_window" class="div_window_normal">
             <pre id="blockchain_output"></pre>
         </div>
@@ -53,18 +53,31 @@
         <div id="transaction_window" class="div_window_normal">
             <textarea id="transactions" placeholder="Transactions object here" 	style="width: 100%; height: 200px;" spellcheck="false" wrap="soft">[
   {
+    // Yes, comments are allowed! Here sending a text message.
+    "blockheight": 2,
     "sender": "10000n",
     "recipient": "999n",
     "amount": "100_0000_0000n",
-    "blockheight": 2,
     "messageText": "bid const"
   },
   {
+    // Here, sending a binary message.
+    "blockheight": 3,
     "sender": "0xaaBBn",
     "recipient": "0x100",
     "amount": "3000_0000",
-    "blockheight": 2,
     "messageHex": "636f6e73742061756374696f6e20676f74203173742062696421000000000000"
+  },
+  {
+    // Support for sending up to 4 tokens, just like in the real world.
+    "blockheight": 4,
+    "sender": "10000n",
+    "recipient": "999",
+    "amount": "1_0000_0000n",
+    "tokens": [
+       {"asset": 123456, "quantity": 1000000},
+       {"asset": 123412, "quantity": 1000000}
+    ]
   }
 ]
 </textarea>
