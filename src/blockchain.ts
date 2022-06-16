@@ -69,6 +69,14 @@ export class BLOCKCHAIN {
         this.maps = []
     }
 
+    reset () {
+        this.txHeight = 0n
+        this.currentBlock = 1
+        this.accounts = []
+        this.transactions = []
+        this.maps = []
+    }
+
     /**
      * Adds transactions from an array of objects to the blockchain. Only adds
      * tx for current block height.

@@ -29,3 +29,9 @@ export const Constants = {
 export const Blockchain = new BLOCKCHAIN()
 export const Contracts: CONTRACT[] = []
 export const Simulator = new SIMULATOR()
+
+export function reset () {
+    Blockchain.reset()
+    Contracts.splice(0, Contracts.length)
+    Simulator.reset()
+}

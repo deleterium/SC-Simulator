@@ -28,6 +28,16 @@ export class SIMULATOR {
         this.lastB = [0n, 0n, 0n, 0n]
     }
 
+    /** Resets Simulator class */
+    reset () {
+        this.currSlotContract = undefined
+        this.breakpoints = []
+        this.lastUpdateMemory = []
+        this.UpcomingTransactions = []
+        this.lastA = [0n, 0n, 0n, 0n]
+        this.lastB = [0n, 0n, 0n, 0n]
+    }
+
     /**
      * Verifies and parse upcoming transactions
      *
