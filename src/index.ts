@@ -35,3 +35,5 @@ export function reset () {
     Contracts.splice(0, Contracts.length)
     Simulator.reset()
 }
+
+export { utils } from './utils'

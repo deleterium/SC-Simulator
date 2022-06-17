@@ -1,5 +1,4 @@
 import * as SCSimulator from './src/index'
-import { utils } from './src/utils'
 import sah from 'smartc-assembly-highlight'
 import { SmartC } from 'smartc-signum-compiler'
 
@@ -405,11 +404,11 @@ function showInspector () {
             '<tr><td>Hex: </td><td>' +
             '0x' + value.toString(16) +
             '</td></tr><tr><td>String: </td><td>"' +
-            utils.long2string(value) +
+            SCSimulator.utils.long2string(value) +
             '"</td></tr><tr><td>uDec: </td><td>' +
             value.toString(10) +
             '</td></tr><tr><td>sDec: </td><td>' +
-            utils.unsigned2signed(value).toString(10) +
+            SCSimulator.utils.unsigned2signed(value).toString(10) +
             '</td></tr></tbody></table>'
     mydiv.innerHTML = content
     mydiv.style.left = (e.layerX + 20) + 'px'
@@ -487,7 +486,7 @@ function updatePage () {
     output += ContractState.dead.toString() + '</td>'
 
     output += '</tr><tr>'
-    output += '<td colspan="2"  class="taleft">Balance: ' + utils.long2stringBalance(SCSimulator.Blockchain.getBalanceFrom(ContractState.contract)) + '</td>'
+    output += '<td colspan="2"  class="taleft">Balance: ' + SCSimulator.utils.long2stringBalance(SCSimulator.Blockchain.getBalanceFrom(ContractState.contract)) + '</td>'
     output += '<td title="Instruction pointer (next line)">IP: ' + (ContractState.instructionPointer + 1).toString()
     if (ContractState.cToAsmMap[ContractState.instructionPointer] !== ContractState.instructionPointer) {
         output += ' - line: ' + ContractState.cToAsmMap[ContractState.instructionPointer].toString(10)
@@ -512,11 +511,11 @@ function updatePage () {
                '</td><td>' +
                '0x' + currVal.toString(16) +
                '</td><td>' +
-               utils.long2string(currVal) +
+               SCSimulator.utils.long2string(currVal) +
                '</td><td>' +
                currVal.toString(10) +
                '</td><td>' +
-               utils.unsigned2signed(currVal).toString(10) +
+               SCSimulator.utils.unsigned2signed(currVal).toString(10) +
                '</td></tr>'
     }
     // A register
@@ -532,11 +531,11 @@ function updatePage () {
                '</td><td>' +
                '0x' + currVal.toString(16) +
                '</td><td>' +
-               utils.long2string(currVal) +
+               SCSimulator.utils.long2string(currVal) +
                '</td><td>' +
                currVal.toString(10) +
                '</td><td>' +
-               utils.unsigned2signed(currVal).toString(10) +
+               SCSimulator.utils.unsigned2signed(currVal).toString(10) +
                '</td></tr>'
     }
     // B register
@@ -552,11 +551,11 @@ function updatePage () {
                '</td><td>' +
                '0x' + currVal.toString(16) +
                '</td><td>' +
-               utils.long2string(currVal) +
+               SCSimulator.utils.long2string(currVal) +
                '</td><td>' +
                currVal.toString(10) +
                '</td><td>' +
-               utils.unsigned2signed(currVal).toString(10) +
+               SCSimulator.utils.unsigned2signed(currVal).toString(10) +
                '</td></tr>'
     }
     output += '</tbody></table>'
@@ -621,7 +620,7 @@ function stringifyReplacer (key, value) {
         return
     }
     if (key === 'balance' || key === 'amount' || key === 'quantity') {
-        return utils.long2stringBalance(value)
+        return SCSimulator.utils.long2stringBalance(value)
     }
     if (typeof value === 'bigint') {
         return value.toString(10)
