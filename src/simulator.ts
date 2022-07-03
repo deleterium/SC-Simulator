@@ -43,7 +43,7 @@ export class SIMULATOR {
      *
      * @param JSONobj string containing JSON object with transactions to be
      * processed
-     *
+     * @sideeffect this.UpcomingTransactions with the selected transactions
      * @return string indicating error. Empty string on success
      */
     parseUpcomingTransactions (JSONobj: string): string {
@@ -62,9 +62,13 @@ export class SIMULATOR {
                     if (key === 'blockheight') {
                         return Number(value)
                     }
+                } else if (typeof value === 'number') {
+                    if (key !== 'blockheight') {
+                        return BigInt(value)
+                    }
                 }
                 if (key === 'sender' || key === 'recipient' || key === 'amount' ||
-                    key === 'asset' || key === 'quantity') {
+                    key === 'asset' || key === 'quantity' || key === 'txid') {
                     return BigInt(value)
                 }
                 return value
