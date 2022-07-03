@@ -48,6 +48,7 @@ export interface Token {
  *  @member {? string} messageHex - If messageText is define, this is ignored. Max 64 chars hexadecimal
  */
 export interface UserTransactionObj {
+    txid: bigint
     type: number
     sender: bigint
     recipient: bigint

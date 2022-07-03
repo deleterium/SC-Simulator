@@ -8,8 +8,8 @@ import { SIMULATOR } from './simulator.js'
 import { CONTRACT } from './contract.js'
 
 export const Constants = {
-    stepfee: 100000n, // default value from signum: 73500n
-    deploy_add_balance: 300000000n, // added balance to contract when deploying it
+    stepfee: 100000n, // default value from signum: 100000n
+    deploy_add_balance: 0n, // added balance to contract when deploying it
     activationAmount: 10000000n, // contract activation amount
     creatorID: 555n, // Account ID of creator
     contractID: 999n, // Account ID of contract
@@ -29,3 +29,11 @@ export const Constants = {
 export const Blockchain = new BLOCKCHAIN()
 export const Contracts: CONTRACT[] = []
 export const Simulator = new SIMULATOR()
+
+export function reset () {
+    Blockchain.reset()
+    Contracts.splice(0, Contracts.length)
+    Simulator.reset()
+}
+
+export { utils } from './utils'

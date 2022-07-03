@@ -92,6 +92,8 @@ label:hover                      { background: #ddf; }
 #color_code {
     counter-reset: line;
     display: none;
+    white-space: pre-wrap;
+    word-wrap: anywhere;
 }
 #source-code, #color_code {
 	/* background: #fafbfc; */
@@ -220,6 +222,7 @@ label:hover                      { background: #ddf; }
 .gcol4 { grid-column-start: 4; }
 .gcol12 { grid-column-start: 1; grid-column-end: 3;}
 .gcol15 { grid-column-start: 1; grid-column-end: 5;}
+.gcol24 { grid-column-start: 2; grid-column-end: 4;}
 .gcol25 { grid-column-start: 2; grid-column-end: 5;}
 
 .div_window_source {

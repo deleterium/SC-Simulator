@@ -69,6 +69,14 @@ export class BLOCKCHAIN {
         this.maps = []
     }
 
+    reset () {
+        this.txHeight = 0n
+        this.currentBlock = 1
+        this.accounts = []
+        this.transactions = []
+        this.maps = []
+    }
+
     /**
      * Adds transactions from an array of objects to the blockchain. Only adds
      * tx for current block height.
@@ -96,7 +104,9 @@ export class BLOCKCHAIN {
             this.txHeight++
             const timestamp = (BigInt(curTX.blockheight) << 32n) + this.txHeight
             // Create urandom txid
-            const txid = utils.getRandom64bit()
+            if (curTX.txid === undefined) {
+                curTX.txid = utils.getRandom64bit()
+            }
             // Process message payload to messageArr
             let txhexstring = ''
             if (curTX.messageText !== undefined) {
@@ -116,7 +126,7 @@ export class BLOCKCHAIN {
                 type: curTX.type ?? expectedType,
                 sender: curTX.sender,
                 recipient: curTX.recipient,
-                txid: txid,
+                txid: curTX.txid,
                 amount: curTX.amount,
                 tokens: curTX.tokens,
                 blockheight: curTX.blockheight,

@@ -28,12 +28,22 @@ export class SIMULATOR {
         this.lastB = [0n, 0n, 0n, 0n]
     }
 
+    /** Resets Simulator class */
+    reset () {
+        this.currSlotContract = undefined
+        this.breakpoints = []
+        this.lastUpdateMemory = []
+        this.UpcomingTransactions = []
+        this.lastA = [0n, 0n, 0n, 0n]
+        this.lastB = [0n, 0n, 0n, 0n]
+    }
+
     /**
      * Verifies and parse upcoming transactions
      *
      * @param JSONobj string containing JSON object with transactions to be
      * processed
-     *
+     * @sideeffect this.UpcomingTransactions with the selected transactions
      * @return string indicating error. Empty string on success
      */
     parseUpcomingTransactions (JSONobj: string): string {
@@ -52,9 +62,13 @@ export class SIMULATOR {
                     if (key === 'blockheight') {
                         return Number(value)
                     }
+                } else if (typeof value === 'number') {
+                    if (key !== 'blockheight') {
+                        return BigInt(value)
+                    }
                 }
                 if (key === 'sender' || key === 'recipient' || key === 'amount' ||
-                    key === 'asset' || key === 'quantity') {
+                    key === 'asset' || key === 'quantity' || key === 'txid') {
                     return BigInt(value)
                 }
                 return value
@@ -111,10 +125,26 @@ export class SIMULATOR {
         if (this.currSlotContract === undefined) {
             return 'No contract deployed..'
         }
-
-        bpline--
-        if (Contracts[this.currSlotContract].getNextInstructionLine(bpline) !== bpline) {
-            return `Line ${bpline} is not an instruction. Breakpoint NOT added.`
+        let assembly = true
+        const CurrContract = Contracts[this.currSlotContract]
+        if (CurrContract.cCodeArr.length > 1) {
+            assembly = false
+        }
+        if (assembly) {
+            bpline--
+            if (CurrContract.getNextInstructionLine(bpline) !== bpline) {
+                return `Line ${bpline} is not an instruction. Breakpoint NOT added.`
+            }
+        } else {
+            const instrLine = CurrContract.cToAsmMap.findIndex(cline => cline === bpline)
+            if (instrLine === -1) {
+                return `No instruction found on line ${bpline}. Breakpoint NOT added.`
+            }
+            const validInstruction = CurrContract.getNextInstructionLine(instrLine)
+            if (CurrContract.cToAsmMap[validInstruction] !== bpline) {
+                return `Line ${bpline} is not an instruction. Breakpoint NOT added.`
+            }
+            bpline = validInstruction
         }
         if (this.breakpoints.find(item => item === bpline) === undefined) {
             this.breakpoints.push(bpline)
@@ -152,11 +182,52 @@ export class SIMULATOR {
     /**
      * Steps contract currently debuggable
      */
-    stepSlotContract () {
+    stepIntoSlotContract () {
         if (this.currSlotContract === undefined) {
             return 'Deploy contract before step...'
         }
-        return Contracts[this.currSlotContract].step(this.breakpoints)
+        const thisContract = Contracts[this.currSlotContract]
+        let execResult: string
+        const startingCLine = thisContract.cToAsmMap[thisContract.instructionPointer]
+        do {
+            execResult = Contracts[this.currSlotContract].step(this.breakpoints)
+        } while (execResult === '' && startingCLine === thisContract.cToAsmMap[thisContract.instructionPointer])
+        return execResult
+    }
+
+    /**
+     * Steps contract currently debuggable
+     */
+    stepOverSlotContract () {
+        if (this.currSlotContract === undefined) {
+            return 'Deploy contract before step...'
+        }
+        const thisContract = Contracts[this.currSlotContract]
+        let execResult: string
+        const startingCLine = thisContract.cToAsmMap[thisContract.instructionPointer]
+        const startingStackLength = thisContract.CodeStack.length
+        do {
+            execResult = Contracts[this.currSlotContract].step(this.breakpoints)
+        } while (execResult === '' && (
+            startingCLine === thisContract.cToAsmMap[thisContract.instructionPointer] ||
+            thisContract.CodeStack.length !== startingStackLength))
+        return execResult
+    }
+
+    /**
+     * Steps contract currently debuggable
+     */
+    stepOutSlotContract () {
+        if (this.currSlotContract === undefined) {
+            return 'Deploy contract before step...'
+        }
+        const thisContract = Contracts[this.currSlotContract]
+        let execResult: string
+        const startingStackLength = thisContract.CodeStack.length
+        do {
+            execResult = Contracts[this.currSlotContract].step(this.breakpoints)
+        } while (execResult === '' && thisContract.CodeStack.length >= startingStackLength)
+        return execResult
     }
 
     /**
@@ -172,8 +243,8 @@ export class SIMULATOR {
      *
      * @param asmSourceCode new contract source code to be deployed
      */
-    deploy (asmSourceCode: string) {
-        const newContract = new CONTRACT(asmSourceCode)
+    deploy (asmSourceCode: string, cSourceCode?: string) {
+        const newContract = new CONTRACT(asmSourceCode, cSourceCode)
         this.currSlotContract = Contracts.push(newContract) - 1
         Blockchain.addBalanceTo(newContract.contract, Constants.deploy_add_balance)
         newContract.forgeBlock()
