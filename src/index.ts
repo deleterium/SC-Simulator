@@ -9,7 +9,7 @@ import { CONTRACT } from './contract.js'
 
 export const Constants = {
     stepfee: 100000n, // default value from signum: 100000n
-    deploy_add_balance: 300000000n, // added balance to contract when deploying it
+    deploy_add_balance: 0n, // added balance to contract when deploying it
     activationAmount: 10000000n, // contract activation amount
     creatorID: 555n, // Account ID of creator
     contractID: 999n, // Account ID of contract
