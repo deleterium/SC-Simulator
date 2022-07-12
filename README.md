@@ -2,7 +2,7 @@
 Smart contracts simulator and debugger for Signum
 
 ## Usage
-[Run it](https://deleterium.deleterium.info/sc-simulator) on my personal page. Optionally clone the repository, and run the application with `npm ci`, then `npm run build` and then `npm run start`. Load example to try it with a simple contract.
+[Run it](https://deleterium.info/sc-simulator) on my personal page. Optionally clone the repository, and run the application with `npm ci`, then `npm run build` and then `npm run start`. Load example to try it with a simple contract.
 For big programs it is possible to detach all fieldsets to have a different view, more static. 
 
 ### Transactions
