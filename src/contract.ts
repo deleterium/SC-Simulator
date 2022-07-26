@@ -260,13 +260,13 @@ export class CONTRACT {
             }
 
             Blockchain.transactions.push({
-                type,
+                blockheight: Blockchain.currentBlock,
                 sender: this.contract,
                 recipient: tx.recipient,
+                type,
                 txid: utils.getRandom64bit(),
                 amount: tx.amount,
                 tokens: tx.tokens,
-                blockheight: Blockchain.currentBlock,
                 timestamp: (BigInt(Blockchain.currentBlock) << 32n) + Blockchain.txHeight,
                 messageArr: tx.messageArr,
                 processed: false,

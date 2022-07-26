@@ -40,13 +40,13 @@ interface BlockchainMapObj {
  *  @member {? string} messageHex max 64 chars hexadecimal
  */
 interface BlockchainTransactionObj {
-    type: number
+    blockheight: number
     sender: bigint
     recipient: bigint
+    type: number
     txid: bigint
     amount: bigint
     tokens: Token[]
-    blockheight: number
     timestamp: bigint
     messageArr: bigint[]
     processed: boolean
@@ -123,13 +123,13 @@ export class BLOCKCHAIN {
 
             // pushes new TX object to blockchain array
             this.transactions.push({
-                type: curTX.type ?? expectedType,
+                blockheight: curTX.blockheight,
                 sender: curTX.sender,
                 recipient: curTX.recipient,
+                type: curTX.type ?? expectedType,
                 txid: curTX.txid,
                 amount: curTX.amount,
                 tokens: curTX.tokens,
-                blockheight: curTX.blockheight,
                 timestamp: timestamp,
                 processed: false,
                 messageArr: utils.hexstring2messagearray(txhexstring),

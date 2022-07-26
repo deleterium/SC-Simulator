@@ -610,11 +610,15 @@ export class API_MICROCODE {
             execute (ContractState, value) {
                 const recipient = ContractState.B[0]
                 const asset = ContractState.B[1]
+                let optionalSignaAmount = ContractState.B[2]
+                if (optionalSignaAmount < 0n) {
+                    optionalSignaAmount = 0n
+                }
                 if (value > Constants.maxPositive || value === 0n) {
                     return
                 }
+                const account = Blockchain.getAccountFromId(ContractState.contract)
                 if (asset === 0n) {
-                    const account = Blockchain.getAccountFromId(ContractState.contract)
                     if (value > account.balance) {
                         value = account.balance
                     }
@@ -636,15 +640,19 @@ export class API_MICROCODE {
                 if (value > accountAsset.quantity) {
                     value = accountAsset.quantity
                 }
+                if (optionalSignaAmount > account.balance) {
+                    optionalSignaAmount = account.balance
+                }
                 accountAsset.quantity -= value
                 const tx = ContractState.enqueuedTX.find(TX => TX.recipient === recipient && TX.tokens[0]?.asset === asset)
                 if (tx) {
                     tx.tokens[0].quantity += value
+                    tx.amount += optionalSignaAmount
                     return
                 }
                 ContractState.enqueuedTX.push({
                     recipient: recipient,
-                    amount: 0n,
+                    amount: optionalSignaAmount,
                     tokens: [{ asset, quantity: value }],
                     messageArr: []
                 })
@@ -960,7 +968,11 @@ export class API_MICROCODE {
             funName: 'Issue_Asset',
             opCode: 0x35,
             execute (ContractState) {
-                const tokenID = Constants.tokenID
+                let tokenID = Constants.nextTokenID
+                if (tokenID === 0n) {
+                    tokenID = Constants.tokenID
+                    Constants.nextTokenID = Constants.tokenID
+                }
                 ContractState.issuedAssets.push(tokenID)
                 ContractState.enqueuedTX.push({
                     recipient: 0n,
@@ -969,7 +981,7 @@ export class API_MICROCODE {
                     messageArr: [ContractState.A[0], ContractState.A[1], 0n, 0n]
                 })
                 // Incremented next mint asset id
-                Constants.tokenID++
+                Constants.nextTokenID++
                 return tokenID
             }
         },
