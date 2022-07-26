@@ -14,6 +14,7 @@ export const Constants = {
     creatorID: 555n, // Account ID of creator
     contractID: 999n, // Account ID of contract
     tokenID: 101010n, // Asset id to be used in Mint_Asset ()
+    nextTokenID: 0n, // Asset id store next value for MintAsset() (ok, this is not constant...)
     contractDPages: 10, // Number of data pages of deployed contract
     contractUSPages: 1, // Number of user stack pages of deployed contract
     contractCSPages: 1, // Number of code stack pages of deployed contract
@@ -34,6 +35,7 @@ export function reset () {
     Blockchain.reset()
     Contracts.splice(0, Contracts.length)
     Simulator.reset()
+    Constants.nextTokenID = 0n
 }
 
 export { utils } from './utils'

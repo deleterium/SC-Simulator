@@ -960,7 +960,11 @@ export class API_MICROCODE {
             funName: 'Issue_Asset',
             opCode: 0x35,
             execute (ContractState) {
-                const tokenID = Constants.tokenID
+                let tokenID = Constants.nextTokenID
+                if (tokenID === 0n) {
+                    tokenID = Constants.tokenID
+                    Constants.nextTokenID = Constants.tokenID
+                }
                 ContractState.issuedAssets.push(tokenID)
                 ContractState.enqueuedTX.push({
                     recipient: 0n,
@@ -969,7 +973,7 @@ export class API_MICROCODE {
                     messageArr: [ContractState.A[0], ContractState.A[1], 0n, 0n]
                 })
                 // Incremented next mint asset id
-                Constants.tokenID++
+                Constants.nextTokenID++
                 return tokenID
             }
         },
