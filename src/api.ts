@@ -614,11 +614,14 @@ export class API_MICROCODE {
                 if (optionalSignaAmount < 0n) {
                     optionalSignaAmount = 0n
                 }
-                if (value > Constants.maxPositive || value === 0n) {
+                if (value > Constants.maxPositive) {
                     return
                 }
                 const account = Blockchain.getAccountFromId(ContractState.contract)
                 if (asset === 0n) {
+                    if (value === 0n) {
+                        return
+                    }
                     if (value > account.balance) {
                         value = account.balance
                     }
@@ -643,6 +646,7 @@ export class API_MICROCODE {
                 if (optionalSignaAmount > account.balance) {
                     optionalSignaAmount = account.balance
                 }
+                account.balance -= optionalSignaAmount
                 accountAsset.quantity -= value
                 const tx = ContractState.enqueuedTX.find(TX => TX.recipient === recipient && TX.tokens[0]?.asset === asset)
                 if (tx) {
@@ -650,10 +654,14 @@ export class API_MICROCODE {
                     tx.amount += optionalSignaAmount
                     return
                 }
+                const tkn = []
+                if (value !== 0n) {
+                    tkn.push({ asset, quantity: value })
+                }
                 ContractState.enqueuedTX.push({
                     recipient: recipient,
                     amount: optionalSignaAmount,
-                    tokens: [{ asset, quantity: value }],
+                    tokens: tkn,
                     messageArr: []
                 })
             }
