@@ -40,6 +40,14 @@ window.onload = function () {
     document.getElementById('transaction_legend').addEventListener('click', evtDetachTransaction)
     document.getElementById('detachAll').addEventListener('click', evtDetachAll)
 
+    const startUpTest = new SmartC({
+        language: 'C',
+        sourceCode: '#pragma version dev\n#pragma maxAuxVars 1\nlong a, b, c; a=b/~c;'
+    })
+    if (document.getElementsByTagName('body')[0].dataset.version !== startUpTest.getCompilerVersion()) {
+        alert('Detect old cache files. Please reload the page with Ctrl+F5.')
+    }
+
     // Buttons to default
     document.getElementById('stepinto').disabled = true
     document.getElementById('togSource').disabled = false

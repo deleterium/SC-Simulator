@@ -611,17 +611,15 @@ export class API_MICROCODE {
                 const recipient = ContractState.B[0]
                 const asset = ContractState.B[1]
                 let optionalSignaAmount = ContractState.B[2]
-                if (optionalSignaAmount < 0n) {
+                if (optionalSignaAmount > Constants.maxPositive) {
+                    // negative value
                     optionalSignaAmount = 0n
                 }
-                if (value > Constants.maxPositive) {
+                if (value > Constants.maxPositive || value === 0n) {
                     return
                 }
                 const account = Blockchain.getAccountFromId(ContractState.contract)
                 if (asset === 0n) {
-                    if (value === 0n) {
-                        return
-                    }
                     if (value > account.balance) {
                         value = account.balance
                     }
