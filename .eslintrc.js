@@ -17,6 +17,8 @@ module.exports = {
         indent: ['error', 4],
         camelcase: 'warn',
         'no-unused-vars': 'warn',
-        'brace-style': ['warn', '1tbs', { allowSingleLine: false }]
+        'brace-style': ['warn', '1tbs', { allowSingleLine: false }],
+        'no-multiple-empty-lines': ['warn', { max: 1 }],
+        'object-shorthand': 'off'
     }
 }

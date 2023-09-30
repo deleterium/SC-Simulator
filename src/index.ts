@@ -1,12 +1,16 @@
-
 // Author: Rui Deleterium
 // Project: https://github.com/deleterium/SC-Simulator
 // License: BSD 3-Clause License
-
-import { BLOCKCHAIN } from './blockchain.js'
+import { BlockchainTransactionObj, BLOCKCHAIN, BlockchainMapObj, AccountObj } from './blockchain.js'
 import { SIMULATOR } from './simulator.js'
 import { CONTRACT } from './contract.js'
-
+import { SmartC } from 'smartc-signum-compiler'
+export * from './objTypes'
+export {
+    BlockchainTransactionObj,
+    BlockchainMapObj,
+    AccountObj
+}
 export const Constants = {
     stepfee: 100000n, // default value from signum: 100000n
     deploy_add_balance: 0n, // added balance to contract when deploying it
@@ -41,3 +45,33 @@ export function reset () {
 }
 
 export { utils } from './utils'
+
+/**
+ * Compiles the given source code and deploys the resulting contract.
+ *
+ * @param {string} source - The source code of the contract to be compiled.
+ * @return The Simulator instance.
+ */
+export function loadSmartContract (source: string) : SIMULATOR {
+    let cCompilationResult = ''
+    const cCompiler = new SmartC({ language: 'C', sourceCode: source + '\n#pragma verboseAssembly true\n' })
+    try {
+        cCompiler.compile()
+    } catch (error: any) {
+        cCompilationResult = error.message
+    }
+    if (cCompilationResult.length !== 0) {
+        throw new Error('Compilation failed.\nC error: ' + cCompilationResult)
+    }
+
+    // Successful compiled c code
+    Simulator.deploy(cCompiler.getAssemblyCode(), source)
+    console.info('C contract successfully compiled and deployed with id ' +
+        Contracts[Contracts.length - 1].contract.toString(10) +
+        ' on slot ' +
+        (Contracts.length - 1) +
+        '. Ready to run'
+    )
+
+    return Simulator
+}

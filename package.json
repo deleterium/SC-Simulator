@@ -1,25 +1,34 @@
 {
-    "name": "sc-simulator",
+    "name": "smartc-signum-simulator",
     "version": "2.0.0",
-    "description": "Smart contracts simulator and debugger for signum network",
-    "main": "src/index.ts",
-    "private": true,
+    "description": "Smart contracts simulator and debugger for Signum Blockchain",
+    "author": "deleterium",
+    "contributors": [
+        "ohager"
+    ],
+    "main": "./dist/index.js",
+    "private": false,
     "homepage": "https://github.com/deleterium/SC-Simulator",
     "scripts": {
         "dev": "TARGET=dev node esbuild.config.js && npx light-server -s . -p 7000 --no-reload",
         "start": "npx light-server -s . -p 7000 --no-reload",
         "lint": "npx eslint try.js src/*.ts",
-        "build": "npm run lint && node esbuild.config.js"
+        "build": "npm run lint && node esbuild.config.js",
+        "build:pkg": "npm run lint && rimraf ./dist && tsc -p tsconfig.pkg.json",
+        "publish:pkg": "npm run build:pkg && npm publish"
+    },
+    "dependencies": {
+        "smartc-assembly-highlight": "^1.1.1",
+        "smartc-signum-compiler": "^2.1.1"
     },
     "devDependencies": {
-        "@typescript-eslint/eslint-plugin": "^4.32.0",
-        "@typescript-eslint/parser": "^4.32.0",
-        "esbuild": "^0.14.39",
-        "eslint": "^7.32.0",
-        "eslint-config-standard": "^16.0.3",
+        "@typescript-eslint/eslint-plugin": "^6.6.0",
+        "@typescript-eslint/parser": "^6.6.0",
+        "esbuild": "^0.19.2",
+        "eslint": "^8.48.0",
+        "eslint-config-standard": "^17.1.0",
         "light-server": "^2.9.1",
-        "smartc-assembly-highlight": "^1.1.1",
-        "smartc-signum-compiler": "^2.1.1",
-        "typescript": "^4.4.4"
+        "rimraf": "^5.0.1",
+        "typescript": "^5.2.2"
     }
 }

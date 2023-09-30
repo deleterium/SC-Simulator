@@ -9,7 +9,7 @@ import { MapObj, Token, UserTransactionObj } from './objTypes.js'
  * @member {bigint} id Account ID (64-bit unsigned)
  * @member {bigint} balance Account current balance (can be negative)
  */
-interface AccountObj {
+export interface AccountObj {
     id: bigint
     balance: bigint
     tokens: Token[]
@@ -21,7 +21,7 @@ interface AccountObj {
 * @member {bigint} id Account ID (64-bit unsigned)
 * @member {bigint} balance Account current balance (can be negative)
 */
-interface BlockchainMapObj {
+export interface BlockchainMapObj {
    id: bigint
    map: MapObj[]
 }
@@ -39,7 +39,7 @@ interface BlockchainMapObj {
  *  @member {? string} messageText
  *  @member {? string} messageHex max 64 chars hexadecimal
  */
-interface BlockchainTransactionObj {
+export interface BlockchainTransactionObj {
     blockheight: number
     sender: bigint
     recipient: bigint

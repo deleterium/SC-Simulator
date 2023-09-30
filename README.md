@@ -31,7 +31,7 @@ All contracts will be executed in order to forge a new block. Breakpoints are di
 It is possible to deploy many contracts. At any time, you can change and inspect other contract, just inform contract slot you want to check. Contracts id's will be incremented if there is other deployed with same id.
 
 ### Preprocessor directives
-When dealing with many contracts, some options can be handyfull and will override default constants when deploying a contract. Using these directives it is possible to set different values for contracts deployed on same run:
+When dealing with many contracts, some options can be handy and will override default constants when deploying a contract. Using these directives it is possible to set different values for contracts deployed on same run:
 * SmartC
   * `#program activationAmount VALUE`
   * `#program creator VALUE`
@@ -54,7 +54,7 @@ When dealing with many contracts, some options can be handyfull and will overrid
 * Messages sent by contract only appears in blockchain when forging next block. This is to simulate actual signum, where only one tx is sent for each account during one block execution. During debug it is possible to check tem as 'enqueuedTX' property in 'Contract State'
 * Only smart contracts from version 3 are supported, according to Signum Rainbow HF (active since 25/jun/2022). If you want to debug one from version 2, please download and install SC-Simulator version [1.0](https://github.com/deleterium/SC-Simulator/releases/tag/v1.0).
 * The API *Check_Sig_B_With_A* is not implemented and will always return zero/false.
-* The balance burned can be slightly diffent in signum-node. This is because some jumps destinations are too far away and then a second instruction must be used. This process happens during compilation this program is an interpreter. 
+* The balance burned can be slightly different in signum-node. This is because some jumps destinations are too far away and then a second instruction must be used. This process happens during compilation this program is an interpreter. 
 
 ## Configuration
 To set new defaults values you will need to run the project locally:
@@ -75,3 +75,12 @@ File out/index.js or src/index.ts can be edited to change Constants:
 
 ## How to run from bytecode?
 SC Simulator is an assembly interpreter. It is not possible to run directly the bytecode. Use a decompiler (like  [Signum D`Or](https://github.com/deleterium/Signum-D-Or) to generate an assembly output.
+
+
+# Usage on Automated Testing (experimental)
+
+It is possible to use the Simulator for Automated Testing. The Simulator can run on NodeJS environments and being tested with common testrunner like Jest, Vitest, etc
+
+## Setup
+
+
