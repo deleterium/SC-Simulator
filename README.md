@@ -80,7 +80,7 @@ SC Simulator is an assembly interpreter. It is not possible to run directly the 
 # Usage on Automated Testing (experimental)
 
 It is possible to use the Simulator for Automated Testing. The Simulator can run on NodeJS environments and being tested with common testrunner like Jest, Vitest, etc
+This way one can write complete test suites and run them quickly on the command line and/or IDEs like VSCode, Webstorm etc. - This TDD (Test Drive Development) speeds up 
+development significantly and also increases the security/safety of contracts, as automated Test Suites tends to increase the coverage of complex scenarios. 
 
-## Setup
-
-
+> There'll be a template project to use for instant Testbed set up. Stay tuned!

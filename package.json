@@ -7,7 +7,7 @@
         "ohager"
     ],
     "main": "./dist/index.js",
-    "private": false,
+    "private": true,
     "homepage": "https://github.com/deleterium/SC-Simulator",
     "scripts": {
         "dev": "TARGET=dev node esbuild.config.js && npx light-server -s . -p 7000 --no-reload",
@@ -15,6 +15,7 @@
         "lint": "npx eslint try.js src/*.ts",
         "build": "npm run lint && node esbuild.config.js",
         "build:pkg": "npm run lint && rimraf ./dist && tsc -p tsconfig.pkg.json",
+        "pack:pkg": "npm run build:pkg && npm pack",
         "publish:pkg": "npm run build:pkg && npm publish"
     },
     "dependencies": {
