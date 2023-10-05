@@ -274,7 +274,7 @@ export class API_MICROCODE {
             funName: 'message_from_Tx_in_A_to_B',
             opCode: 0x32,
             execute (ContractState) {
-                const tx = Blockchain.transactions.find(TX => TX.recipient === ContractState.contract && TX.txid === ContractState.A[0])
+                const tx = Blockchain.transactions.find(TX => TX.txid === ContractState.A[0])
                 if (tx === undefined) {
                     ContractState.B = [0n, 0n, 0n, 0n]
                     return
@@ -294,7 +294,7 @@ export class API_MICROCODE {
             funName: 'B_to_Address_of_Tx_in_A',
             opCode: 0x32,
             execute (ContractState) {
-                const tx = Blockchain.transactions.find(TX => TX.recipient === ContractState.contract && TX.txid === ContractState.A[0])
+                const tx = Blockchain.transactions.find(TX => TX.txid === ContractState.A[0])
                 ContractState.B = [0n, 0n, 0n, 0n]
                 if (tx === undefined) {
                     return
@@ -323,7 +323,7 @@ export class API_MICROCODE {
             funName: 'B_To_Assets_Of_Tx_In_A',
             opCode: 0x32,
             execute (ContractState) {
-                const tx = Blockchain.transactions.find(TX => TX.recipient === ContractState.contract && TX.txid === ContractState.A[0])
+                const tx = Blockchain.transactions.find(TX => TX.txid === ContractState.A[0])
                 ContractState.B = [0n, 0n, 0n, 0n]
                 if (tx === undefined) {
                     return
@@ -864,7 +864,7 @@ export class API_MICROCODE {
             opCode: 0x35,
             execute (ContractState) {
                 const tx = Blockchain.getTxFrom(ContractState.A[0])
-                if (tx === undefined || tx.recipient !== ContractState.contract) {
+                if (tx === undefined) {
                     return Constants.minus1
                 }
                 return BigInt(tx.type)
@@ -875,7 +875,7 @@ export class API_MICROCODE {
             opCode: 0x35,
             execute (ContractState) {
                 const tx = Blockchain.getTxFrom(ContractState.A[0])
-                if (tx === undefined || tx.recipient !== ContractState.contract) {
+                if (tx === undefined) {
                     return Constants.minus1
                 }
                 const asset = ContractState.A[1]
@@ -891,7 +891,7 @@ export class API_MICROCODE {
             opCode: 0x35,
             execute (ContractState) {
                 const tx = Blockchain.getTxFrom(ContractState.A[0])
-                if (tx === undefined || tx.recipient !== ContractState.contract) {
+                if (tx === undefined) {
                     return Constants.minus1
                 }
                 return tx.timestamp
@@ -902,7 +902,7 @@ export class API_MICROCODE {
             opCode: 0x35,
             execute (ContractState) {
                 const tx = Blockchain.getTxFrom(ContractState.A[0])
-                if (tx === undefined || tx.recipient !== ContractState.contract) {
+                if (tx === undefined) {
                     return Constants.minus1
                 }
                 if (tx.blockheight + Constants.getRandomSleepBlocks > Blockchain.currentBlock) {
