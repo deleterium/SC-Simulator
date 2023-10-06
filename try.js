@@ -117,7 +117,7 @@ function pasteEvent (e) {
 
 // Adds manual breakpoint
 function evtAddBreakPoint () {
-    if (SCSimulator.Contracts.length === 0) {
+    if (SCSimulator.Simulator.getNumberOfContracts() === 0) {
         inform('Deploy contract before adding a breakpoint..')
         return
     }
@@ -208,7 +208,7 @@ function evtForgeBlock () {
 // Toggle source code or code highlighted for debug
 function evtToggleSource () {
     const colorDOM = document.getElementById('color_code')
-    if (SCSimulator.Contracts.length === 0) {
+    if (SCSimulator.Simulator.getNumberOfContracts() === 0) {
         inform('No contract deployed.')
         return
     }
@@ -222,17 +222,18 @@ function evtToggleSource () {
 // Prompt to load a contract from a slot
 function evtLoadSlot () {
     const numCc = SCSimulator.Simulator.getNumberOfContracts()
-    if (numCc === -1) {
+    if (numCc <= 1) {
         return
     }
-    const slot = Number(prompt('Which contract? 0..' + numCc))
+    const slot = parseInt(prompt('Which contract? 0..' + (numCc - 1)))
 
-    if (slot < 0 && slot > numCc) {
+    if (slot < 0 || slot >= numCc || isNaN(slot)) {
         inform('Invalid slot number.')
         return
     }
     SCSimulator.Simulator.currSlotContract = slot
     SCSimulator.Simulator.clearAllBreakpoints()
+    inform(`Contract on slot ${slot} loaded.`)
     setColorSource()
 }
 
@@ -268,10 +269,11 @@ function setColorSource () {
     document.getElementById('addbp').disabled = false
 
     let collection
-    if (SCSimulator.Contracts[SCSimulator.Simulator.currSlotContract].cCodeArr.length > 1) {
-        colorDOM.innerHTML = hljs.highlight(SCSimulator.Contracts[SCSimulator.Simulator.currSlotContract].cCodeArr.join('\n'), { language: 'c' }).value
+    const currContract = SCSimulator.Simulator.getCurrentSlotContract()
+    if (currContract.cCodeArr.length > 1) {
+        colorDOM.innerHTML = hljs.highlight(currContract.cCodeArr.join('\n'), { language: 'c' }).value
     } else {
-        colorDOM.innerHTML = sah.colorText(SCSimulator.Contracts[SCSimulator.Simulator.currSlotContract].asmCodeArr.join('\n'))
+        colorDOM.innerHTML = sah.colorText(currContract.asmCodeArr.join('\n'))
 
         collection = document.getElementsByClassName('asmVariable')
         for (let i = 0; i < collection.length; i++) {
@@ -317,11 +319,12 @@ function setSourceCode () {
     document.getElementById('stepout').disabled = true
     document.getElementById('addbp').disabled = true
 
-    if (SCSimulator.Simulator.currSlotContract !== undefined) {
-        if (SCSimulator.Contracts[SCSimulator.Simulator.currSlotContract].cCodeArr.length > 1) {
-            sourceDOM.value = SCSimulator.Contracts[SCSimulator.Simulator.currSlotContract].cCodeArr.join('\n')
+    const currContract = SCSimulator.Simulator.getCurrentSlotContract()
+    if (currContract) {
+        if (currContract.cCodeArr.length > 1) {
+            sourceDOM.value = currContract.cCodeArr.join('\n')
         } else {
-            sourceDOM.value = SCSimulator.Contracts[SCSimulator.Simulator.currSlotContract].asmCodeArr.join('\n')
+            sourceDOM.value = currContract.asmCodeArr.join('\n')
         }
     }
     inform('You can edit/change source code.')
@@ -361,21 +364,21 @@ function deploy () {
         // Successful compiled c code
         SCSimulator.Simulator.deploy(cCompiler.getAssemblyCode(), source)
         inform('C contract successfully compiled and deployed with id ' +
-            SCSimulator.Contracts[SCSimulator.Contracts.length - 1].contract.toString(10) +
+            SCSimulator.Simulator.getCurrentSlotContract().contract.toString(10) +
             ' on slot ' +
-            (SCSimulator.Contracts.length - 1) +
+            (SCSimulator.Simulator.currSlotContract) +
             '. Ready to run'
         )
     } else {
         SCSimulator.Simulator.deploy(asmCompiler.getAssemblyCode())
         inform('Assembly contract successfully deployed with id ' +
-            SCSimulator.Contracts[SCSimulator.Contracts.length - 1].contract.toString(10) +
+        SCSimulator.Simulator.getCurrentSlotContract().contract.toString(10) +
             ' on slot ' +
-            (SCSimulator.Contracts.length - 1) +
+            (SCSimulator.Simulator.currSlotContract) +
             '. Ready to run'
         )
     }
-    if (SCSimulator.Contracts.length > 1) {
+    if (SCSimulator.Simulator.getNumberOfContracts() > 1) {
         document.getElementById('loadSlot').disabled = false
     }
 }
@@ -389,7 +392,7 @@ function hideInspector () {
 function showInspector () {
     const e = window.event
     const asmVar = e.currentTarget.innerText.slice(1).trim()
-    if (SCSimulator.Contracts.length === 0) {
+    if (SCSimulator.Simulator.getNumberOfContracts() === 0) {
         return
     }
     const mydiv = document.getElementById('inspectorID')
@@ -397,7 +400,7 @@ function showInspector () {
         mydiv.style.display = 'none'
         return
     }
-    const ContractState = SCSimulator.Contracts[SCSimulator.Simulator.currSlotContract]
+    const ContractState = SCSimulator.Simulator.getCurrentSlotContract()
     const variable = ContractState.Memory.find(mem => mem.varName === asmVar)
     let value
     if (variable !== undefined) {
@@ -428,10 +431,10 @@ function showInspector () {
 function showLabel () {
     const e = window.event
     const textLabel = e.currentTarget.innerText.trim().replace(':', '')
-    if (SCSimulator.Contracts.length === 0) {
+    if (SCSimulator.Simulator.Simulator.getNumberOfContracts() === 0) {
         return
     }
-    const ContractState = SCSimulator.Contracts[SCSimulator.Contracts.length - 1]
+    const ContractState = SCSimulator.Simulator.getCurrentSlotContract()
     const mydiv = document.getElementById('inspectorID')
     if (mydiv.style.display === 'block') {
         mydiv.style.display = 'none'
@@ -464,7 +467,7 @@ function updatePage () {
         document.getElementById('blockchain_output').innerHTML = ''
         return
     }
-    const ContractState = SCSimulator.Contracts[SCSimulator.Simulator.currSlotContract]
+    const ContractState = SCSimulator.Simulator.getCurrentSlotContract()
     // Boolean properties
     let assembly = true
     if (ContractState.cCodeArr.length > 1) {

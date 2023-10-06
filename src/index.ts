@@ -24,7 +24,7 @@ export const Constants = {
     contractCSPages: 1, // Number of code stack pages of deployed contract
     getRandomSleepBlocks: 15, // Sleep blocks during API to get random ticket.
 
-    build: '2022.07.31',
+    build: '2023.10.05',
 
     // do not change these
     minus1: 18446744073709551615n, // -1 in 64-bit unsigned

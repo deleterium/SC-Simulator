@@ -231,14 +231,33 @@ export class SIMULATOR {
 
     /**
      *
-     * @returns Number of contracts currently deployed. -1 if none deployed
+     * @returns Number of contracts currently deployed. 0 if none deployed
      */
     getNumberOfContracts () {
-        return Contracts.length - 1
+        return Contracts.length
     }
 
     /**
-     * Deploy a new contract
+     *
+     * @returns The contract currently debuggable or undefined if no contract was deployed
+     */
+    getCurrentSlotContract () {
+        if (this.currSlotContract === undefined) {
+            return undefined
+        }
+        return Contracts[this.currSlotContract]
+    }
+
+    /**
+     *
+     * @returns The contract on 'slot', or undefined if error
+     */
+    getContract (slot: number) {
+        return Contracts[slot]
+    }
+
+    /**
+     * Deploy a new contract and set it to current slot
      *
      * @param asmSourceCode new contract source code to be deployed
      */
