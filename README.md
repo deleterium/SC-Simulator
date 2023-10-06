@@ -77,10 +77,28 @@ File out/index.js or src/index.ts can be edited to change Constants:
 SC Simulator is an assembly interpreter. It is not possible to run directly the bytecode. Use a decompiler (like  [Signum D`Or](https://github.com/deleterium/Signum-D-Or) to generate an assembly output.
 
 
-# Usage on Automated Testing (experimental)
+# Deploy Simulator Class Package
 
-It is possible to use the Simulator for Automated Testing. The Simulator can run on NodeJS environments and being tested with common testrunner like Jest, Vitest, etc
+The simulator consists of two components: the UI and a reusable class.
+The class can be packaged and/or published to npm (and others).
+
+## Motivation
+
+It is possible to use the Simulator for Automated Testing. The Simulator can run on NodeJS environments and being tested with common test runner like Jest, Vitest, etc
 This way one can write complete test suites and run them quickly on the command line and/or IDEs like VSCode, Webstorm etc. - This TDD (Test Drive Development) speeds up 
 development significantly and also increases the security/safety of contracts, as automated Test Suites tends to increase the coverage of complex scenarios. 
 
-> There'll be a template project to use for instant Testbed set up. Stay tuned!
+If you are interested in automated testing with SmartC you may like this project: https://github.com/ohager/signum-smartc-testbed
+
+## npm - Publicly
+
+Just run `npm run publish:pkg`
+
+This requires you to have a npm account.
+
+
+## Local Package/Distributable
+
+Just run `npm run pack:pkg`
+
+This generates a file like `smartc-signum-simulator-2.0.0.tgz` which can be installed _locally_ using `npm i smartc-signum-simulator-2.0.0.tgz`
