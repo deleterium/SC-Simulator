@@ -232,10 +232,10 @@ export class SIMULATOR {
 
     /**
      *
-     * @returns Number of contracts currently deployed. -1 if none deployed
+     * @returns Number of contracts currently deployed. 0 if none deployed
      */
     getNumberOfContracts () {
-        return Contracts.length - 1
+        return Contracts.length
     }
 
     /**
