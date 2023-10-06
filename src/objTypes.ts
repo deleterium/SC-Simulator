@@ -1,4 +1,3 @@
-
 // Author: Rui Deleterium
 // Project: https://github.com/deleterium/SC-Simulator
 // License: BSD 3-Clause License
@@ -48,8 +47,8 @@ export interface Token {
  *  @member {? string} messageHex - If messageText is define, this is ignored. Max 64 chars hexadecimal
  */
 export interface UserTransactionObj {
-    txid: bigint
-    type: number
+    txid?: bigint
+    type?: number
     sender: bigint
     recipient: bigint
     amount: bigint
