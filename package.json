@@ -7,19 +7,18 @@
         "ohager"
     ],
     "main": "./dist/index.js",
-    "private": true,
+    "private": false,
     "homepage": "https://github.com/deleterium/SC-Simulator",
     "scripts": {
         "dev": "TARGET=dev node esbuild.config.js && npx light-server -s . -p 7000 --no-reload",
         "start": "npx light-server -s . -p 7000 --no-reload",
         "lint": "npx eslint try.js src/*.ts",
         "build": "npm run lint && node esbuild.config.js",
-        "build:pkg": "npm run lint && rimraf ./dist && tsc -p tsconfig.pkg.json",
+        "build:pkg": "npm run lint && npx rimraf ./dist && npx tsc -p tsconfig.pkg.json",
         "pack:pkg": "npm run build:pkg && npm pack",
         "publish:pkg": "npm run build:pkg && npm publish"
     },
     "dependencies": {
-        "smartc-assembly-highlight": "^1.1.1",
         "smartc-signum-compiler": "^2.1.1"
     },
     "devDependencies": {
@@ -30,6 +29,7 @@
         "eslint-config-standard": "^17.1.0",
         "light-server": "^2.9.1",
         "rimraf": "^5.0.1",
+        "smartc-assembly-highlight": "^1.1.1",
         "typescript": "^5.2.2"
     }
 }
