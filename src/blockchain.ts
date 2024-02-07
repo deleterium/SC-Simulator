@@ -1,7 +1,9 @@
 
 import { utils } from './utils.js'
 
-import { MapObj, Token, UserTransactionObj } from './objTypes.js'
+import { ContractDeployOptions, MapObj, Token, TransactionObj } from './objTypes.js'
+import { Constants } from './index.js'
+import { CONTRACT } from './contract.js'
 
 /**
  * Object for accounts stored in blockchain
@@ -60,6 +62,8 @@ export class BLOCKCHAIN {
     accounts: AccountObj[]
     transactions: BlockchainTransactionObj[]
     maps: BlockchainMapObj[]
+    nextTokenID: bigint
+    Contracts: CONTRACT[]
 
     constructor () {
         this.txHeight = 0n
@@ -67,6 +71,8 @@ export class BLOCKCHAIN {
         this.accounts = []
         this.transactions = []
         this.maps = []
+        this.nextTokenID = Constants.firstTokenID
+        this.Contracts = []
     }
 
     reset () {
@@ -75,6 +81,8 @@ export class BLOCKCHAIN {
         this.accounts = []
         this.transactions = []
         this.maps = []
+        this.nextTokenID = Constants.firstTokenID
+        this.Contracts = []
     }
 
     /**
@@ -83,8 +91,12 @@ export class BLOCKCHAIN {
      *
      * @param TXarray Array of TX objects created by user
      */
-    addTransactions (TXarray: UserTransactionObj[]) {
-        TXarray.forEach(curTX => {
+    addTransactions (TXarray: TransactionObj[]) {
+        TXarray.forEach((curTX) => {
+            if (!curTX.blockheight) {
+                // If no blockheight, always add to current block. Mainly for contract transactions
+                curTX.blockheight = this.currentBlock
+            }
             if (curTX.blockheight !== this.currentBlock) {
                 return
             }
@@ -109,9 +121,13 @@ export class BLOCKCHAIN {
             }
             // Process message payload to messageArr
             let txhexstring = ''
-            if (curTX.messageText !== undefined) {
+            if (curTX.messageArr) {
+                txhexstring = utils.messagearray2hexstring(curTX.messageArr)
+            }
+            if (curTX.messageText) {
                 txhexstring = utils.string2hexstring(curTX.messageText)
-            } else if (curTX.messageHex !== undefined) {
+            }
+            if (curTX.messageHex) {
                 txhexstring = curTX.messageHex
             }
             let expectedType = 0 // Ordinary payment
@@ -133,10 +149,21 @@ export class BLOCKCHAIN {
                 timestamp: timestamp,
                 processed: false,
                 messageArr: utils.hexstring2messagearray(txhexstring),
-                messageText: curTX.messageText,
-                messageHex: curTX.messageHex
+                messageText: utils.hexstring2string(txhexstring),
+                messageHex: txhexstring
             })
         })
+    }
+
+    /**
+     * Meant to be used to burn smart contract execution fees without a transaction
+     * to the ID 0.
+     * @param accoundId from account
+     * @param amount
+     */
+    burnBalance (accoundId: bigint, amount: bigint) {
+        this.addBalanceTo(accoundId, -amount)
+        this.addBalanceTo(0n, amount)
     }
 
     /**
@@ -166,6 +193,36 @@ export class BLOCKCHAIN {
             return
         }
         foundAsset.quantity += quantity
+    }
+
+    /**
+     * @param {ContractDeployOptions} options
+     */
+    deployContract (options: ContractDeployOptions) {
+        const newContract = new CONTRACT(this, options)
+        this.Contracts.push(newContract)
+        this.addBalanceTo(newContract.contract, Constants.deploy_add_balance)
+        newContract.preForgeBlock()
+        return newContract
+    }
+
+    addContract (contract: CONTRACT) {
+        this.Contracts.push(contract)
+    }
+
+    getContract (contractID: bigint) {
+        return this.Contracts.find(contr => contr.contract === contractID)
+    }
+
+    /**
+     * @returns An array with all deployed contracts addresses as string
+     */
+    getAllContractAddresses () {
+        const contractList: string[] = []
+        this.Contracts.forEach((cc: CONTRACT) => {
+            contractList.push(cc.contract.toString(10))
+        })
+        return contractList
     }
 
     /**
@@ -220,6 +277,16 @@ export class BLOCKCHAIN {
     }
 
     /**
+     *
+     * @param id Account id to search
+     * @returns all assets found
+     */
+    getAssetsFromId (id: bigint) {
+        const foundAccount = this.getAccountFromId(id)
+        return foundAccount.tokens
+    }
+
+    /**
     *
     * @param asset Asset id to search
     * @returns Total amount of QNT circulating
@@ -269,6 +336,22 @@ export class BLOCKCHAIN {
     }
 
     /**
+     * @param id Contract ID
+     * @param newMap Map to be saved
+     */
+    saveMap (id: bigint, newMap: MapObj[]) {
+        const currentMap = this.getMapFromId(id)
+        if (currentMap === undefined) {
+            this.maps.push({
+                id,
+                map: utils.deepCopy(newMap)
+            })
+            return
+        }
+        currentMap.map = utils.deepCopy(newMap)
+    }
+
+    /**
      *
      * @param id Account id to get balance
      * @returns Its balance. If account does not exists, it is NOT created
@@ -307,6 +390,18 @@ export class BLOCKCHAIN {
         return this.transactions.find(TX => TX.recipient === accoundId &&
             TX.timestamp > tstamp && TX.amount >= minAmount &&
             TX.blockheight < this.currentBlock)
+    }
+
+    getCurrentBlock () {
+        return this.currentBlock
+    }
+
+    getNextTokenID () {
+        return this.nextTokenID
+    }
+
+    incrementNextTokenID () {
+        this.nextTokenID++
     }
 
     /**

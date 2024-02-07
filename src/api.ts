@@ -2,7 +2,7 @@
 // Project: https://github.com/deleterium/SC-Simulator
 // License: BSD 3-Clause License
 
-import { Blockchain, Constants, Contracts } from './index.js'
+import { Constants } from './index.js'
 import { CONTRACT } from './contract.js'
 import { HashLib } from './hashlib.js'
 import { utils } from './utils.js'
@@ -274,7 +274,7 @@ export class API_MICROCODE {
             funName: 'message_from_Tx_in_A_to_B',
             opCode: 0x32,
             execute (ContractState) {
-                const tx = Blockchain.transactions.find(TX => TX.txid === ContractState.A[0])
+                const tx = ContractState.Blockchain.transactions.find(TX => TX.txid === ContractState.A[0])
                 if (tx === undefined) {
                     ContractState.B = [0n, 0n, 0n, 0n]
                     return
@@ -294,7 +294,7 @@ export class API_MICROCODE {
             funName: 'B_to_Address_of_Tx_in_A',
             opCode: 0x32,
             execute (ContractState) {
-                const tx = Blockchain.transactions.find(TX => TX.txid === ContractState.A[0])
+                const tx = ContractState.Blockchain.transactions.find(TX => TX.txid === ContractState.A[0])
                 ContractState.B = [0n, 0n, 0n, 0n]
                 if (tx === undefined) {
                     return
@@ -312,7 +312,7 @@ export class API_MICROCODE {
                     ContractState.B[0] = ContractState.creator
                     return
                 }
-                const targetContract = Contracts.find(Obj => Obj.contract === contractId)
+                const targetContract = ContractState.Blockchain.getContract(contractId)
                 if (targetContract === undefined) {
                     return
                 }
@@ -323,7 +323,7 @@ export class API_MICROCODE {
             funName: 'B_To_Assets_Of_Tx_In_A',
             opCode: 0x32,
             execute (ContractState) {
-                const tx = Blockchain.transactions.find(TX => TX.txid === ContractState.A[0])
+                const tx = ContractState.Blockchain.transactions.find(TX => TX.txid === ContractState.A[0])
                 ContractState.B = [0n, 0n, 0n, 0n]
                 if (tx === undefined) {
                     return
@@ -339,40 +339,42 @@ export class API_MICROCODE {
             funName: 'send_All_to_Address_in_B',
             opCode: 0x32,
             execute (ContractState) {
-                const account = Blockchain.getAccountFromId(ContractState.contract)
-                const tx = ContractState.enqueuedTX.find(TX => TX.recipient === ContractState.B[0])
+                const tx = ContractState.enqueuedTX.find(TX => TX.type === 22 && TX.recipient === ContractState.B[0])
                 if (tx !== undefined) {
-                    tx.amount += account.balance
-                    account.balance = 0n
+                    tx.amount += ContractState.balance
+                    ContractState.balance = 0n
                     return
                 }
                 ContractState.enqueuedTX.push({
+                    type: 22,
+                    sender: ContractState.contract,
                     recipient: ContractState.B[0],
-                    amount: account.balance,
+                    amount: ContractState.balance,
                     tokens: [],
                     messageArr: [0n, 0n, 0n, 0n]
                 })
-                account.balance = 0n
+                ContractState.balance = 0n
             }
         },
         {
             funName: 'send_Old_to_Address_in_B',
             opCode: 0x32,
             execute (ContractState) {
-                const account = Blockchain.getAccountFromId(ContractState.contract)
-                const tx = ContractState.enqueuedTX.find(TX => TX.recipient === ContractState.B[0])
+                const tx = ContractState.enqueuedTX.find(TX => TX.type === 22 && TX.recipient === ContractState.B[0])
                 let sendBalance: bigint
-                if (ContractState.previousBalance > account.balance) {
-                    sendBalance = account.balance
+                if (ContractState.previousBalance > ContractState.balance) {
+                    sendBalance = ContractState.balance
                 } else {
                     sendBalance = ContractState.previousBalance
                 }
-                account.balance -= sendBalance
+                ContractState.balance -= sendBalance
                 if (tx !== undefined) {
                     tx.amount += sendBalance
                     return
                 }
                 ContractState.enqueuedTX.push({
+                    type: 22,
+                    sender: ContractState.contract,
                     recipient: ContractState.B[0],
                     amount: sendBalance,
                     tokens: [],
@@ -384,7 +386,7 @@ export class API_MICROCODE {
             funName: 'send_A_to_Address_in_B',
             opCode: 0x32,
             execute (ContractState) {
-                const tx = ContractState.enqueuedTX.find(TX => TX.recipient === ContractState.B[0])
+                const tx = ContractState.enqueuedTX.find(TX => TX.type === 22 && TX.recipient === ContractState.B[0])
 
                 if (tx !== undefined) {
                     if (tx.messageArr.length === 31 * 4) {
@@ -394,6 +396,8 @@ export class API_MICROCODE {
                     return
                 }
                 ContractState.enqueuedTX.push({
+                    type: 22,
+                    sender: ContractState.contract,
                     recipient: ContractState.B[0],
                     amount: 0n,
                     tokens: [],
@@ -426,7 +430,7 @@ export class API_MICROCODE {
                 if (ContractState.issuedAssets.find(val => val === asset) === undefined) {
                     return
                 }
-                const accountAsset = Blockchain.getAssetFromId(ContractState.contract, asset)
+                const accountAsset = ContractState.Blockchain.getAssetFromId(ContractState.contract, asset)
                 accountAsset.quantity += quantity
             }
         },
@@ -442,34 +446,36 @@ export class API_MICROCODE {
                 if (holdersAsset === 0n) {
                     return
                 }
-                const preliminaryHoldersCount = Blockchain.getAssetHoldersCount(holdersAsset, holdersAssetMinimum)
+                const preliminaryHoldersCount = ContractState.Blockchain.getAssetHoldersCount(holdersAsset, holdersAssetMinimum)
                 if (preliminaryHoldersCount === 0n) {
                     return
                 }
                 if (assetToDistribute !== 0n) {
-                    const accountAsset = Blockchain.getAssetFromId(ContractState.contract, assetToDistribute)
-                    if (quantityToDistribute > accountAsset.quantity) {
-                        quantityToDistribute = accountAsset.quantity
+                    const avaliableAsset = ContractState.tokens.find(tkn => tkn.asset === assetToDistribute) ?? { assetToDistribute, quantity: 0n }
+                    if (quantityToDistribute > avaliableAsset.quantity) {
+                        quantityToDistribute = avaliableAsset.quantity
                     }
+                    avaliableAsset.quantity -= quantityToDistribute
+                    const accountAsset = ContractState.Blockchain.getAssetFromId(ContractState.contract, assetToDistribute)
                     accountAsset.quantity -= quantityToDistribute
                 }
                 if (amountToDistribute > 0) {
-                    const account = Blockchain.getAccountFromId(ContractState.contract)
-                    if (amountToDistribute > account.balance) {
-                        amountToDistribute = account.balance
+                    if (amountToDistribute > ContractState.balance) {
+                        amountToDistribute = ContractState.balance
                     }
+                    const account = ContractState.Blockchain.getAccountFromId(ContractState.contract)
                     account.balance -= amountToDistribute
                 }
                 if (quantityToDistribute === 0n && amountToDistribute === 0n) {
                     return
                 }
-                const holdersAndQuantity = Blockchain.getAllHolders(holdersAsset, holdersAssetMinimum)
+                const holdersAndQuantity = ContractState.Blockchain.getAllHolders(holdersAsset, holdersAssetMinimum)
                 if (holdersAndQuantity.length === 0) {
                     // Cancel distribution akward situation in contract tring to distribute all its own asset
                     //  but it is the only holder.
-                    const account = Blockchain.getAccountFromId(ContractState.contract)
+                    const account = ContractState.Blockchain.getAccountFromId(ContractState.contract)
                     account.balance += amountToDistribute
-                    const accountAsset = Blockchain.getAssetFromId(ContractState.contract, assetToDistribute)
+                    const accountAsset = ContractState.Blockchain.getAssetFromId(ContractState.contract, assetToDistribute)
                     if (accountAsset) {
                         accountAsset.quantity += quantityToDistribute
                     }
@@ -484,7 +490,7 @@ export class API_MICROCODE {
                 let distributedAmount = 0n
                 let distributedQuantity = 0n
                 for (let i = 0; i < holdersAndQuantity.length; i++) {
-                    const foundAccount = Blockchain.getAccountFromId(holdersAndQuantity[i][0])
+                    const foundAccount = ContractState.Blockchain.getAccountFromId(holdersAndQuantity[i][0])
                     if (assetToDistribute !== 0n) {
                         let quantityToHolder = (quantityToDistribute * holdersAndQuantity[i][1]) / thisCirculatingSupply
                         if (i === holdersAndQuantity.length - 1) {
@@ -510,6 +516,8 @@ export class API_MICROCODE {
                     }
                 }
                 ContractState.enqueuedTX.push({
+                    type: 2,
+                    sender: ContractState.contract,
                     recipient: 0n,
                     amount: 0n,
                     tokens: [],
@@ -596,7 +604,7 @@ export class API_MICROCODE {
             funName: 'A_to_Tx_after_Timestamp',
             opCode: 0x33,
             execute (ContractState, value) {
-                const tx = Blockchain.getTxAfterTimestamp(value, ContractState.contract, ContractState.activationAmount)
+                const tx = ContractState.Blockchain.getTxAfterTimestamp(value, ContractState.contract, ContractState.activationAmount)
                 ContractState.A = [0n, 0n, 0n, 0n]
                 if (tx !== undefined) {
                     tx.processed = true
@@ -618,18 +626,19 @@ export class API_MICROCODE {
                 if (value > Constants.maxPositive || value === 0n) {
                     return
                 }
-                const account = Blockchain.getAccountFromId(ContractState.contract)
                 if (asset === 0n) {
-                    if (value > account.balance) {
-                        value = account.balance
+                    if (value > ContractState.balance) {
+                        value = ContractState.balance
                     }
-                    account.balance -= value
-                    const tx = ContractState.enqueuedTX.find(TX => TX.recipient === recipient && TX.tokens.length === 0)
+                    ContractState.balance -= value
+                    const tx = ContractState.enqueuedTX.find(TX => TX.type === 22 && TX.recipient === recipient)
                     if (tx !== undefined) {
                         tx.amount += value
                         return
                     }
                     ContractState.enqueuedTX.push({
+                        type: 22,
+                        sender: ContractState.contract,
                         recipient: recipient,
                         amount: value,
                         tokens: [],
@@ -637,14 +646,14 @@ export class API_MICROCODE {
                     })
                     return
                 }
-                const accountAsset = Blockchain.getAssetFromId(ContractState.contract, asset)
+                const accountAsset = ContractState.tokens.find(tkn => tkn.asset === asset) ?? { asset, quantity: 0n }
                 if (value > accountAsset.quantity) {
                     value = accountAsset.quantity
                 }
-                if (optionalSignaAmount > account.balance) {
-                    optionalSignaAmount = account.balance
+                if (optionalSignaAmount > ContractState.balance) {
+                    optionalSignaAmount = ContractState.balance
                 }
-                account.balance -= optionalSignaAmount
+                ContractState.balance -= optionalSignaAmount
                 accountAsset.quantity -= value
                 const tx = ContractState.enqueuedTX.find(TX => TX.recipient === recipient && TX.tokens[0]?.asset === asset)
                 if (tx) {
@@ -657,6 +666,8 @@ export class API_MICROCODE {
                     tkn.push({ asset, quantity: value })
                 }
                 ContractState.enqueuedTX.push({
+                    type: 2,
+                    sender: ContractState.contract,
                     recipient: recipient,
                     amount: optionalSignaAmount,
                     tokens: tkn,
@@ -842,7 +853,7 @@ export class API_MICROCODE {
             funName: 'get_Block_Timestamp',
             opCode: 0x35,
             execute (ContractState) {
-                return BigInt(Blockchain.currentBlock) << 32n
+                return BigInt(ContractState.Blockchain.currentBlock) << 32n
             }
         },
         {
@@ -856,14 +867,14 @@ export class API_MICROCODE {
             funName: 'get_Last_Block_Timestamp',
             opCode: 0x35,
             execute (ContractState) {
-                return BigInt(Blockchain.currentBlock - 1) << 32n
+                return BigInt(ContractState.Blockchain.currentBlock - 1) << 32n
             }
         },
         {
             funName: 'get_Type_for_Tx_in_A',
             opCode: 0x35,
             execute (ContractState) {
-                const tx = Blockchain.getTxFrom(ContractState.A[0])
+                const tx = ContractState.Blockchain.getTxFrom(ContractState.A[0])
                 if (tx === undefined) {
                     return Constants.minus1
                 }
@@ -874,7 +885,7 @@ export class API_MICROCODE {
             funName: 'get_Amount_for_Tx_in_A',
             opCode: 0x35,
             execute (ContractState) {
-                const tx = Blockchain.getTxFrom(ContractState.A[0])
+                const tx = ContractState.Blockchain.getTxFrom(ContractState.A[0])
                 if (tx === undefined) {
                     return Constants.minus1
                 }
@@ -890,7 +901,7 @@ export class API_MICROCODE {
             funName: 'get_Timestamp_for_Tx_in_A',
             opCode: 0x35,
             execute (ContractState) {
-                const tx = Blockchain.getTxFrom(ContractState.A[0])
+                const tx = ContractState.Blockchain.getTxFrom(ContractState.A[0])
                 if (tx === undefined) {
                     return Constants.minus1
                 }
@@ -901,16 +912,15 @@ export class API_MICROCODE {
             funName: 'get_Ticket_Id_for_Tx_in_A',
             opCode: 0x35,
             execute (ContractState) {
-                const tx = Blockchain.getTxFrom(ContractState.A[0])
+                const tx = ContractState.Blockchain.getTxFrom(ContractState.A[0])
                 if (tx === undefined) {
                     return Constants.minus1
                 }
-                if (tx.blockheight + Constants.getRandomSleepBlocks > Blockchain.currentBlock) {
+                if (tx.blockheight + Constants.getRandomSleepBlocks > ContractState.Blockchain.currentBlock) {
                     ContractState.frozen = false
                     ContractState.running = false
                     ContractState.stopped = true
                     ContractState.finished = false
-                    ContractState.previousBalance = Blockchain.getBalanceFrom(ContractState.contract)
                     ContractState.sleepUntilBlock = tx.blockheight + Constants.getRandomSleepBlocks
                     return 0n
                 }
@@ -923,9 +933,9 @@ export class API_MICROCODE {
             execute (ContractState) {
                 const asset = ContractState.B[1]
                 if (asset === 0n) {
-                    return Blockchain.getBalanceFrom(ContractState.contract)
+                    return ContractState.balance
                 }
-                return Blockchain.getTokenQuantityFrom(ContractState.contract, asset)
+                return ContractState.Blockchain.getTokenQuantityFrom(ContractState.contract, asset)
             }
         },
         {
@@ -943,7 +953,7 @@ export class API_MICROCODE {
                 if (atId === 0n || atId === ContractState.contract) {
                     return ContractState.codeHashId
                 }
-                const foundContract = Contracts.find(Obj => Obj.contract === atId)
+                const foundContract = ContractState.Blockchain.getContract(atId)
                 if (foundContract === undefined) {
                     return 0n
                 }
@@ -957,7 +967,7 @@ export class API_MICROCODE {
                 let targetMap = ContractState.map
                 const targetId = ContractState.A[2]
                 if (targetId !== 0n && targetId !== ContractState.contract) {
-                    const contractMap = Blockchain.getMapFromId(targetId)
+                    const contractMap = ContractState.Blockchain.getMapFromId(targetId)
                     if (contractMap === undefined) {
                         return 0n
                     }
@@ -974,20 +984,19 @@ export class API_MICROCODE {
             funName: 'Issue_Asset',
             opCode: 0x35,
             execute (ContractState) {
-                let tokenID = Constants.nextTokenID
-                if (tokenID === 0n) {
-                    tokenID = Constants.tokenID
-                    Constants.nextTokenID = Constants.tokenID
-                }
+                const tokenID = ContractState.Blockchain.getNextTokenID()
                 ContractState.issuedAssets.push(tokenID)
                 ContractState.enqueuedTX.push({
+                    type: 2,
+                    txid: tokenID,
+                    sender: ContractState.contract,
                     recipient: 0n,
                     amount: 0n,
                     tokens: [{ asset: tokenID, quantity: 0n }],
                     messageArr: [ContractState.A[0], ContractState.A[1], 0n, 0n]
                 })
                 // Incremented next mint asset id
-                Constants.nextTokenID++
+                ContractState.Blockchain.incrementNextTokenID()
                 return tokenID
             }
         },
@@ -997,7 +1006,7 @@ export class API_MICROCODE {
             execute (ContractState) {
                 const mininum = ContractState.B[0]
                 const asset = ContractState.B[1]
-                return Blockchain.getAssetHoldersCount(asset, mininum)
+                return ContractState.Blockchain.getAssetHoldersCount(asset, mininum)
             }
         },
         {
@@ -1008,7 +1017,7 @@ export class API_MICROCODE {
                 if (atId === 0n || atId === ContractState.contract) {
                     return ContractState.activationAmount
                 }
-                const foundContract = Contracts.find(Obj => Obj.contract === atId)
+                const foundContract = ContractState.Blockchain.getContract(atId)
                 if (foundContract === undefined) {
                     return 0n
                 }
@@ -1023,7 +1032,7 @@ export class API_MICROCODE {
                 if (asset === 0n) {
                     return 0n
                 }
-                return Blockchain.getAssetCirculating(asset)
+                return ContractState.Blockchain.getAssetCirculating(asset)
             }
         }
     ]
