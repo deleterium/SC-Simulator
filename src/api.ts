@@ -1053,9 +1053,9 @@ export class API_MICROCODE {
                 const account = ContractState.B[0]
                 const asset = ContractState.B[1]
                 if (asset === 0n) {
-                    return Blockchain.getBalanceFrom(account)
+                    return ContractState.Blockchain.getBalanceFrom(account)
                 }
-                return Blockchain.getTokenQuantityFrom(account, asset)
+                return ContractState.Blockchain.getTokenQuantityFrom(account, asset)
             }
         }
     ]
