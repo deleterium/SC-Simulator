@@ -198,6 +198,39 @@ export class utils {
         } while (true)
     }
 
+    /**
+     * Use this function to parse transaction obj text to transaction object with JSON.parse()
+     */
+    static parseTransactionObj (key: string, value: any) {
+        switch (typeof value) {
+        case 'string':
+            value = value.replace(/_/g, '')
+            if (key === 'blockheight') {
+                return Number(value)
+            }
+            if (/^[\d_]+n$/.test(value)) {
+                return BigInt(value.slice(0, -1))
+            }
+            if (/^[\d_]+$/.test(value)) {
+                return BigInt(value)
+            }
+            if (/^0[xX][\da-fA-F_]+n$/.test(value)) {
+                return BigInt(value.slice(0, -1))
+            }
+            if (/^0[xX][\da-fA-F_]+$/.test(value)) {
+                return BigInt(value)
+            }
+            return value
+        case 'number':
+            if (key !== 'blockheight') {
+                return BigInt(value)
+            }
+            return value
+        default:
+            return value
+        }
+    }
+
     // Note: Found at https://gist.github.com/sunnyy02/2477458d4d1c08bde8cc06cd8f56702e
     // https://javascript.plainenglish.io/deep-clone-an-object-and-preserve-its-type-with-typescript-d488c35e5574
     /**

@@ -4,7 +4,7 @@
 
 import { CONTRACT } from './contract.js'
 
-import { Constants, Blockchain } from './index.js'
+import { Constants } from './index.js'
 
 import { utils } from './utils.js'
 import { API_MICROCODE } from './api.js'
@@ -820,8 +820,7 @@ export class CPU {
                 ContractState.running = false
                 ContractState.stopped = true
                 ContractState.finished = false
-                ContractState.previousBalance = Blockchain.getBalanceFrom(ContractState.contract)
-                ContractState.sleepUntilBlock = Blockchain.currentBlock + Number(val1)
+                ContractState.sleepUntilBlock = ContractState.Blockchain.getCurrentBlock() + Number(val1)
                 ContractState.instructionPointer = ContractState.getNextInstructionLine()
                 return true
             }
@@ -835,8 +834,7 @@ export class CPU {
                 ContractState.running = false
                 ContractState.stopped = true
                 ContractState.finished = false
-                ContractState.previousBalance = Blockchain.getBalanceFrom(ContractState.contract)
-                ContractState.sleepUntilBlock = Blockchain.currentBlock + 1
+                ContractState.sleepUntilBlock = ContractState.Blockchain.getCurrentBlock() + 1
                 ContractState.instructionPointer = ContractState.getNextInstructionLine()
                 return true
             }
@@ -859,7 +857,6 @@ export class CPU {
                     ContractState.running = false
                     ContractState.stopped = false
                     ContractState.finished = true
-                    ContractState.previousBalance = Blockchain.getBalanceFrom(ContractState.contract)
                     ContractState.instructionPointer = ContractState.PCS
                 } else {
                     ContractState.instructionPointer = ContractState.getNextInstructionLine()
@@ -885,7 +882,6 @@ export class CPU {
                     ContractState.running = false
                     ContractState.stopped = true
                     ContractState.finished = false
-                    ContractState.previousBalance = Blockchain.getBalanceFrom(ContractState.contract)
                 }
 
                 ContractState.instructionPointer = ContractState.getNextInstructionLine()
@@ -901,7 +897,6 @@ export class CPU {
                 ContractState.running = false
                 ContractState.stopped = false
                 ContractState.finished = true
-                ContractState.previousBalance = Blockchain.getBalanceFrom(ContractState.contract)
                 ContractState.instructionPointer = ContractState.PCS
                 return true
             }
@@ -915,7 +910,6 @@ export class CPU {
                 ContractState.running = false
                 ContractState.stopped = true
                 ContractState.finished = false
-                ContractState.previousBalance = Blockchain.getBalanceFrom(ContractState.contract)
                 ContractState.instructionPointer = ContractState.getNextInstructionLine()
                 return true
             }
@@ -1065,7 +1059,7 @@ export class CPU {
 
                 const val1 = Api.execute(ContractState)
 
-                if (regexParts[2] === 'get_Ticket_Id_for_Tx_in_A' && ContractState.sleepUntilBlock > Blockchain.currentBlock) {
+                if (regexParts[2] === 'get_Ticket_Id_for_Tx_in_A' && ContractState.sleepUntilBlock > ContractState.Blockchain.getCurrentBlock()) {
                 // do no advance instruction pointer. Resume contract in same instruction to get result.
                     return true
                 }
@@ -1149,9 +1143,7 @@ export class CPU {
             return null
         }
         const currParts = InstructionObj.regex.exec(currLine)
-
-        const account = Blockchain.accounts.find(obj => obj.id === ContractState.contract)
-        if (account === undefined || currParts === null) {
+        if (currParts === null) {
             return null
         }
         // process exceptions for step fee
@@ -1159,13 +1151,20 @@ export class CPU {
         if (currParts[2] === 'Issue_Asset') {
             regularStepFee = 150000n
         }
-        account.balance -= Constants.stepfee * regularStepFee
-        if (account.balance < 0) {
+        const executionCost = Constants.stepfee * regularStepFee
+        if (executionCost > ContractState.balance) {
+            // no more balance, stop
             ContractState.frozen = true
-            account.balance += Constants.stepfee * regularStepFee
-            ContractState.previousBalance = account.balance
             return true
         }
+        if ((ContractState.executionFee + executionCost) / Constants.stepfee > Constants.maxStepsEachBlock) {
+            // Max steps reached
+            ContractState.frozen = true
+            ContractState.sleepUntilBlock = ContractState.Blockchain.getCurrentBlock() + 1
+            return true
+        }
+        ContractState.executionFee += executionCost
+        ContractState.balance -= executionCost
         return InstructionObj.execute(ContractState, currParts)
     }
 

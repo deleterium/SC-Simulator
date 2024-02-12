@@ -3,32 +3,23 @@
 // License: BSD 3-Clause License
 
 import {
-    Constants,
-    Blockchain
+    Constants
 } from './index.js'
 
 import { utils } from './utils.js'
 
-import { MapObj, MemoryObj, Token } from './objTypes.js'
+import { ContractDeployOptions, ContractTransactionObj, MapObj, MemoryObj, Token } from './objTypes.js'
 import { CPU } from './cpu.js'
-
-/**
- * Object for transactions created by smart contracts
- *  @member {bigint} recipient
- *  @member {bigint} amount
- *  @member {bigint[]} messageArr
- */
-interface ContractTransactionObj {
-    recipient: bigint
-    amount: bigint
-    tokens: Token[]
-    messageArr: bigint[]
-}
+import { BLOCKCHAIN } from './blockchain.js'
 
 export class CONTRACT {
+    Blockchain: BLOCKCHAIN
     instructionPointer: number
     sleepUntilBlock: number
+    balance: bigint
     previousBalance: bigint
+    executionFee: bigint
+    tokens: Token[]
     frozen: boolean
     running: boolean
     stopped: boolean
@@ -57,23 +48,27 @@ export class CONTRACT {
     cCodeArr: string[]
     cToAsmMap: number[]
 
-    constructor (asmSourceCode: string, cSourceCode: string = '') {
+    constructor (Blockchain: BLOCKCHAIN, options: ContractDeployOptions) {
+        this.Blockchain = Blockchain
         this.instructionPointer = 0
         this.sleepUntilBlock = 0
+        this.balance = 0n
         this.previousBalance = 0n
+        this.executionFee = 0n
+        this.tokens = []
         this.frozen = false
         this.running = true
         this.stopped = false
         this.finished = false
         this.dead = false
         this.activationAmount = Constants.activationAmount
-        this.creator = Constants.creatorID
-        this.contract = Constants.contractID
-        this.codeHashId = 0n
-        this.creationBlock = Blockchain.currentBlock
-        this.DataPages = Constants.contractDPages
-        this.UserStackPages = Constants.contractUSPages
-        this.CodeStackPages = Constants.contractUSPages
+        this.creator = options.creatorID ?? Constants.creatorID
+        this.contract = options.contractID ?? Constants.contractID
+        this.codeHashId = options.codeHashId ?? 0n
+        this.creationBlock = Blockchain.getCurrentBlock()
+        this.DataPages = options.dataPages ?? Constants.contractDPages
+        this.UserStackPages = options.userStackPages ?? Constants.contractUSPages
+        this.CodeStackPages = options.codeStackPages ?? Constants.contractCSPages
         this.Memory = []
         this.UserStack = []
         this.CodeStack = []
@@ -85,8 +80,8 @@ export class CONTRACT {
         this.issuedAssets = []
         this.PCS = 0
         this.ERR = null
-        this.asmCodeArr = asmSourceCode.split('\n')
-        this.cCodeArr = cSourceCode.split('\n')
+        this.asmCodeArr = options.asmSourceCode.split('\n')
+        this.cCodeArr = options.cSourceCode ? options.cSourceCode.split('\n') : ['']
         this.cToAsmMap = this.buildMap()
         CPU.cpuDeploy(this)
         while (Blockchain.accounts.find(acc => acc.id === this.contract) !== undefined) {
@@ -177,7 +172,7 @@ export class CONTRACT {
 
     // Verifies if contract can be run
     checkState (): string {
-        if (this.sleepUntilBlock > Blockchain.currentBlock) {
+        if (this.sleepUntilBlock > this.Blockchain.getCurrentBlock()) {
             return 'Contract sleeping!'
         }
 
@@ -192,6 +187,20 @@ export class CONTRACT {
         return ''
     }
 
+    /**
+     * Sets the internal variables if contract is activated
+     */
+    private contractBlockStartUp () {
+        this.stopped = false
+        this.frozen = false
+        this.finished = false
+        this.running = true
+        this.balance = this.Blockchain.getBalanceFrom(this.contract)
+        this.previousBalance = this.balance
+        this.tokens = utils.deepCopy(this.Blockchain.getAssetsFromId(this.contract))
+        this.executionFee = 0n
+    }
+
     isPendingExecution () {
         if (this.frozen === false &&
             this.running === true) {
@@ -201,80 +210,48 @@ export class CONTRACT {
     }
 
     /**
-     * Triggered during new block forge. Handles activation of contract
-     * and change contract state variables.
+     * Triggered during new block forge. Prepares the contract, sets flags and handles
+     * activation of contract.
      *
      */
-    forgeBlock () {
-        // Activate contract if it was sleeping
-        if (this.sleepUntilBlock > Blockchain.currentBlock) {
+    preForgeBlock () {
+        // Activation by sleeping
+        const currentBlock = this.Blockchain.getCurrentBlock()
+        if (this.sleepUntilBlock > currentBlock) {
             return
-        } else if (this.sleepUntilBlock === Blockchain.currentBlock) {
-            this.stopped = false
-            this.frozen = false
-            this.finished = false
-            this.running = true
+        }
+        if (this.sleepUntilBlock === currentBlock) {
+            this.contractBlockStartUp()
             return
         }
 
-        // find new incoming tx
-        const incomingTX = Blockchain.transactions.find(TX => TX.recipient === this.contract &&
-            TX.processed === false &&
+        // Activation by incoming tx
+        const incomingTX = this.Blockchain.transactions.find(TX =>
+            TX.recipient === this.contract &&
+            TX.blockheight === currentBlock - 1 &&
             TX.amount >= this.activationAmount)
         if (incomingTX !== undefined) {
-            this.stopped = false
-            this.frozen = false
-            this.finished = false
-            this.running = true
-            incomingTX.processed = true
+            this.contractBlockStartUp()
             return
         }
-        if (this.activationAmount === 0n) {
+
+        // Activation by zero activationAmount
+        if (this.activationAmount === 0n && this.Blockchain.getBalanceFrom(this.contract) > 0n) {
             // SmartContracts with zero activation amount never stop
-            this.stopped = false
-            this.frozen = false
-            this.finished = false
-            this.running = true
+            this.contractBlockStartUp()
         }
     }
 
     /**
-     * Triggered as last operations for current block height. Send
-     * the messages created by contract on current block execution.
+     * Ensures the contract was fully executed and update the information in Blockchain
+     *
      */
-    dispatchEnqueuedTX () {
-        this.enqueuedTX.forEach(tx => {
-            const recaccount = Blockchain.getAccountFromId(tx.recipient)
-            recaccount.balance += tx.amount
-            Blockchain.txHeight++
-
-            const messageHex = utils.messagearray2hexstring(tx.messageArr)
-
-            let type = 22
-            if (tx.tokens.length !== 0) {
-                type = 2
-                tx.tokens.forEach(Tkn => {
-                    const accountAsset = Blockchain.getAssetFromId(tx.recipient, Tkn.asset)
-                    accountAsset.quantity += Tkn.quantity
-                })
-            }
-
-            Blockchain.transactions.push({
-                blockheight: Blockchain.currentBlock,
-                sender: this.contract,
-                recipient: tx.recipient,
-                type,
-                txid: utils.getRandom64bit(),
-                amount: tx.amount,
-                tokens: tx.tokens,
-                timestamp: (BigInt(Blockchain.currentBlock) << 32n) + Blockchain.txHeight,
-                messageArr: tx.messageArr,
-                processed: false,
-                messageHex: messageHex,
-                messageText: utils.hexstring2string(messageHex)
-            })
-        })
+    postForgeBlock () {
+        this.run()
+        this.Blockchain.addTransactions(this.enqueuedTX)
         this.enqueuedTX = []
+        this.Blockchain.saveMap(this.contract, this.map)
+        this.Blockchain.burnBalance(this.contract, this.executionFee)
     }
 
     /**
@@ -299,15 +276,44 @@ export class CONTRACT {
         return line
     }
 
-    saveMapOnBlockchain () {
-        const oldValues = Blockchain.maps.find(obj => obj.id === this.contract)
-        if (oldValues === undefined) {
-            Blockchain.maps.push({
-                id: this.contract,
-                map: utils.deepCopy(this.map)
-            })
-            return
-        }
-        oldValues.map = utils.deepCopy(this.map)
+    /**
+     * Get all current contract data
+     */
+    dumpContractData () {
+        return utils.deepCopy({
+            instructionPointer: this.instructionPointer,
+            sleepUntilBlock: this.sleepUntilBlock,
+            balance: this.balance,
+            previousBalance: this.previousBalance,
+            executionFee: this.executionFee,
+            tokens: this.tokens,
+            frozen: this.frozen,
+            running: this.running,
+            stopped: this.stopped,
+            finished: this.finished,
+            dead: this.dead,
+            activationAmount: this.activationAmount,
+            creator: this.creator,
+            contract: this.contract,
+            codeHashId: this.codeHashId,
+            creationBlock: this.creationBlock,
+            DataPages: this.DataPages,
+            UserStackPages: this.UserStackPages,
+            CodeStackPages: this.CodeStackPages,
+            Memory: this.Memory,
+            UserStack: this.UserStack,
+            CodeStack: this.CodeStack,
+            enqueuedTX: this.enqueuedTX,
+            exception: this.exception,
+            A: this.A,
+            B: this.B,
+            map: this.map,
+            issuedAssets: this.issuedAssets,
+            PCS: this.PCS,
+            ERR: this.ERR,
+            asmCodeArr: this.asmCodeArr,
+            cCodeArr: this.cCodeArr,
+            cToAsmMap: this.cToAsmMap
+        })
     }
 }

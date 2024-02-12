@@ -1,4 +1,4 @@
-import * as SCSimulator from './src/index'
+import { SimNode, utils } from './src/index'
 import sah from 'smartc-assembly-highlight'
 import { SmartC } from 'smartc-signum-compiler'
 
@@ -13,6 +13,8 @@ import { SmartC } from 'smartc-signum-compiler'
 sah.Config.preLine = "<div id='codeline%line%' class='line'>"
 sah.Config.postLine = '</div>'
 /* Functions for user interface */
+
+const Node = new SimNode()
 
 window.onload = function () {
     const scode = document.getElementById('source-code')
@@ -31,7 +33,7 @@ window.onload = function () {
     document.getElementById('stepout').addEventListener('click', evtStepOutContract)
     document.getElementById('stepover').addEventListener('click', evtStepOverContract)
     document.getElementById('togSource').addEventListener('click', evtToggleSource)
-    document.getElementById('loadSlot').addEventListener('click', evtLoadSlot)
+    document.getElementById('loadSlot').addEventListener('click', evtLoadContract)
 
     document.getElementById('source_legend').addEventListener('click', evtDetachSource)
     document.getElementById('actions_legend').addEventListener('click', evtDetachActions)
@@ -117,7 +119,7 @@ function pasteEvent (e) {
 
 // Adds manual breakpoint
 function evtAddBreakPoint () {
-    if (SCSimulator.Simulator.getNumberOfContracts() === 0) {
+    if (!Node.Simulator.isReady()) {
         inform('Deploy contract before adding a breakpoint..')
         return
     }
@@ -128,7 +130,7 @@ function evtAddBreakPoint () {
         inform('Line not found. Breakpoint NOT added')
         return
     }
-    const result = SCSimulator.Simulator.toggleBreakpoint(Number(newbp))
+    const result = Node.Simulator.toggleBreakpoint(Number(newbp))
     if (result === 'ADDED') {
         linediv.className += ' breakpoint'
         inform('Breakpoint ' + newbp + ' added')
@@ -147,7 +149,7 @@ function evtClickBreakpoint () {
     if (linediv === undefined) {
         return
     }
-    const result = SCSimulator.Simulator.toggleBreakpoint(Number(newbp))
+    const result = Node.Simulator.toggleBreakpoint(Number(newbp))
     if (result === 'ADDED') {
         linediv.className += ' breakpoint'
         inform('Breakpoint ' + newbp + ' added')
@@ -160,14 +162,14 @@ function evtClickBreakpoint () {
 
 // Runs contract for current block (until end or breakpoint found)
 function evtRunContract () {
-    const retString = SCSimulator.Simulator.runSlotContract()
+    const retString = Node.Simulator.runSlotContract()
     inform(retString)
     updatePage()
 }
 
 // Runs only one line stepping into calls
 function evtStepIntoContract () {
-    const retString = SCSimulator.Simulator.stepIntoSlotContract()
+    const retString = Node.Simulator.stepIntoSlotContract()
     if (retString === '') {
         inform('Step done.')
     } else {
@@ -178,7 +180,7 @@ function evtStepIntoContract () {
 
 // Runs only one line stepping over calls
 function evtStepOverContract (click) {
-    const retString = SCSimulator.Simulator.stepOverSlotContract()
+    const retString = Node.Simulator.stepOverSlotContract()
     if (retString === '') {
         inform('Step done.')
     } else {
@@ -189,7 +191,7 @@ function evtStepOverContract (click) {
 
 // Runs lines until turn back one level in code stack
 function evtStepOutContract (click) {
-    const retString = SCSimulator.Simulator.stepOutSlotContract()
+    const retString = Node.Simulator.stepOutSlotContract()
     if (retString === '') {
         inform('Step done.')
     } else {
@@ -200,15 +202,20 @@ function evtStepOutContract (click) {
 
 // Simulate forging one block
 function evtForgeBlock () {
-    const rcString = SCSimulator.Simulator.forgeBlock(document.getElementById('transactions').value)
-    inform(rcString)
+    const result = Node.setScenario(document.getElementById('transactions').value)
+    if (result.errorCode) {
+        inform(result.errorDescription)
+        return
+    }
+    const blockheight = Node.forgeBlock()
+    inform(`Block ${blockheight} was forged. Pausing to inspect contracts`)
     updatePage()
 }
 
 // Toggle source code or code highlighted for debug
 function evtToggleSource () {
     const colorDOM = document.getElementById('color_code')
-    if (SCSimulator.Simulator.getNumberOfContracts() === 0) {
+    if (!Node.Simulator.isReady()) {
         inform('No contract deployed.')
         return
     }
@@ -220,20 +227,21 @@ function evtToggleSource () {
 }
 
 // Prompt to load a contract from a slot
-function evtLoadSlot () {
-    const numCc = SCSimulator.Simulator.getNumberOfContracts()
-    if (numCc <= 1) {
+function evtLoadContract () {
+    const contractsArray = Node.Blockchain.getAllContractAddresses()
+    const address = parseInt(prompt('Enter the contract address. Currently deployed are ' +
+        contractsArray.join(', ')))
+    try {
+        const contract = BigInt(address)
+        if (Node.Simulator.setCurrentSlotContract(contract) === undefined) {
+            inform('Contract not found.')
+            return
+        }
+    } catch (e) {
+        inform(`Invalid input: ${e.message}`)
         return
     }
-    const slot = parseInt(prompt('Which contract? 0..' + (numCc - 1)))
-
-    if (slot < 0 || slot >= numCc || isNaN(slot)) {
-        inform('Invalid slot number.')
-        return
-    }
-    SCSimulator.Simulator.currSlotContract = slot
-    SCSimulator.Simulator.clearAllBreakpoints()
-    inform(`Contract on slot ${slot} loaded.`)
+    inform(`Contract ${address.toString(10)} loaded.`)
     setColorSource()
 }
 
@@ -241,7 +249,7 @@ function evtLoadSlot () {
 function evtDeploy () {
     const action = document.getElementById('deploy').innerText
     if (action === 'Reset') {
-        SCSimulator.reset()
+        Node.reset()
         document.getElementById('deploy').innerText = 'Deploy'
         setSourceCode()
         updatePage()
@@ -253,7 +261,7 @@ function evtDeploy () {
 function setColorSource () {
     const sourceDOM = document.getElementById('source-code')
     const colorDOM = document.getElementById('color_code')
-    if (SCSimulator.Simulator.currSlotContract === undefined) {
+    if (!Node.Simulator.isReady()) {
         inform('No contract deployed.')
         return
     }
@@ -269,7 +277,7 @@ function setColorSource () {
     document.getElementById('addbp').disabled = false
 
     let collection
-    const currContract = SCSimulator.Simulator.getCurrentSlotContract()
+    const currContract = Node.Simulator.dumpCurrentContractData()
     if (currContract.cCodeArr.length > 1) {
         colorDOM.innerHTML = hljs.highlight(currContract.cCodeArr.join('\n'), { language: 'c' }).value
     } else {
@@ -297,7 +305,7 @@ function setColorSource () {
     }
     updatePage()
 
-    SCSimulator.Simulator.getBreakpoints().forEach(bpLine => {
+    Node.Simulator.getBreakpoints().forEach(bpLine => {
         const linediv = document.getElementById('codeline' + bpLine)
         if (linediv === undefined) {
             return
@@ -319,8 +327,8 @@ function setSourceCode () {
     document.getElementById('stepout').disabled = true
     document.getElementById('addbp').disabled = true
 
-    const currContract = SCSimulator.Simulator.getCurrentSlotContract()
-    if (currContract) {
+    if (Node.Simulator.isReady()) {
+        const currContract = Node.Simulator.dumpCurrentContractData()
         if (currContract.cCodeArr.length > 1) {
             sourceDOM.value = currContract.cCodeArr.join('\n')
         } else {
@@ -362,23 +370,21 @@ function deploy () {
     }
     if (cCompilationResult.length === 0) {
         // Successful compiled c code
-        SCSimulator.Simulator.deploy(cCompiler.getAssemblyCode(), source)
-        inform('C contract successfully compiled and deployed with id ' +
-            SCSimulator.Simulator.getCurrentSlotContract().contract.toString(10) +
-            ' on slot ' +
-            (SCSimulator.Simulator.currSlotContract) +
+        const contractSimulator = Node.loadSmartContract(source)
+        inform('C contract successfully compiled and deployed in address ' +
+            contractSimulator.contract.toString(10) +
             '. Ready to run'
         )
     } else {
-        SCSimulator.Simulator.deploy(asmCompiler.getAssemblyCode())
-        inform('Assembly contract successfully deployed with id ' +
-        SCSimulator.Simulator.getCurrentSlotContract().contract.toString(10) +
-            ' on slot ' +
-            (SCSimulator.Simulator.currSlotContract) +
+        const ccSimulator = Node.Blockchain.deployContract({
+            asmSourceCode: asmCompiler.getAssemblyCode()
+        })
+        inform('Assembly contract successfully deployed in address ' +
+            ccSimulator.contract.toString(10) +
             '. Ready to run'
         )
     }
-    if (SCSimulator.Simulator.getNumberOfContracts() > 1) {
+    if (Node.Blockchain.getAllContractAddresses().length > 1) {
         document.getElementById('loadSlot').disabled = false
     }
 }
@@ -392,7 +398,7 @@ function hideInspector () {
 function showInspector () {
     const e = window.event
     const asmVar = e.currentTarget.innerText.slice(1).trim()
-    if (SCSimulator.Simulator.getNumberOfContracts() === 0) {
+    if (!Node.Simulator.isReady()) {
         return
     }
     const mydiv = document.getElementById('inspectorID')
@@ -400,7 +406,7 @@ function showInspector () {
         mydiv.style.display = 'none'
         return
     }
-    const ContractState = SCSimulator.Simulator.getCurrentSlotContract()
+    const ContractState = Node.Simulator.dumpCurrentContractData()
     const variable = ContractState.Memory.find(mem => mem.varName === asmVar)
     let value
     if (variable !== undefined) {
@@ -415,11 +421,11 @@ function showInspector () {
             '<tr><td>Hex: </td><td>' +
             '0x' + value.toString(16) +
             '</td></tr><tr><td>String: </td><td>"' +
-            SCSimulator.utils.long2string(value) +
+            utils.long2string(value) +
             '"</td></tr><tr><td>uDec: </td><td>' +
             value.toString(10) +
             '</td></tr><tr><td>sDec: </td><td>' +
-            SCSimulator.utils.unsigned2signed(value).toString(10) +
+            utils.unsigned2signed(value).toString(10) +
             '</td></tr></tbody></table>'
     mydiv.innerHTML = content
     mydiv.style.left = (e.layerX + 20) + 'px'
@@ -431,10 +437,10 @@ function showInspector () {
 function showLabel () {
     const e = window.event
     const textLabel = e.currentTarget.innerText.trim().replace(':', '')
-    if (SCSimulator.Simulator.Simulator.getNumberOfContracts() === 0) {
+    if (!Node.Simulator.isReady()) {
         return
     }
-    const ContractState = SCSimulator.Simulator.getCurrentSlotContract()
+    const ContractState = Node.Simulator.dumpCurrentContractData()
     const mydiv = document.getElementById('inspectorID')
     if (mydiv.style.display === 'block') {
         mydiv.style.display = 'none'
@@ -461,13 +467,13 @@ function updatePage () {
     let output = ''
     let currVal
 
-    if (SCSimulator.Simulator.currSlotContract === undefined) {
+    if (!Node.Simulator.isReady()) {
         // clearPage
         document.getElementById('memory_window').innerHTML = ''
         document.getElementById('blockchain_output').innerHTML = ''
         return
     }
-    const ContractState = SCSimulator.Simulator.getCurrentSlotContract()
+    const ContractState = Node.Simulator.dumpCurrentContractData()
     // Boolean properties
     let assembly = true
     if (ContractState.cCodeArr.length > 1) {
@@ -497,7 +503,7 @@ function updatePage () {
     output += ContractState.dead.toString() + '</td>'
 
     output += '</tr><tr>'
-    output += '<td colspan="2"  class="taleft">Balance: ' + SCSimulator.utils.long2stringBalance(SCSimulator.Blockchain.getBalanceFrom(ContractState.contract)) + '</td>'
+    output += '<td colspan="2"  class="taleft">Balance: ' + utils.long2stringBalance(ContractState.balance) + '</td>'
     output += '<td title="Instruction pointer (next line)">IP: ' + (ContractState.instructionPointer + 1).toString()
     if (ContractState.cToAsmMap[ContractState.instructionPointer] !== ContractState.instructionPointer) {
         output += ' - line: ' + ContractState.cToAsmMap[ContractState.instructionPointer].toString(10)
@@ -512,7 +518,7 @@ function updatePage () {
               '<th>String</th><th>Unsigned dec</th><th>Signed dec</th></tr>'
     for (let idx = 0; idx < ContractState.Memory.length; idx++) {
         currVal = ContractState.Memory[idx].value
-        if (SCSimulator.Simulator.lastUpdateMemory[idx] !== undefined && currVal === SCSimulator.Simulator.lastUpdateMemory[idx].value) {
+        if (Node.Simulator.lastUpdateMemory[idx] !== undefined && currVal === Node.Simulator.lastUpdateMemory[idx].value) {
             output += '<tr><td>'
         } else {
             output += '<tr class="updatedVal"><td>'
@@ -522,17 +528,17 @@ function updatePage () {
                '</td><td>' +
                '0x' + currVal.toString(16) +
                '</td><td>' +
-               SCSimulator.utils.long2string(currVal) +
+               utils.long2string(currVal) +
                '</td><td>' +
                currVal.toString(10) +
                '</td><td>' +
-               SCSimulator.utils.unsigned2signed(currVal).toString(10) +
+               utils.unsigned2signed(currVal).toString(10) +
                '</td></tr>'
     }
     // A register
     for (let idx = 0; idx < 4; idx++) {
         currVal = ContractState.A[idx]
-        if (SCSimulator.Simulator.lastA !== undefined && currVal === SCSimulator.Simulator.lastA[idx]) {
+        if (Node.Simulator.lastA !== undefined && currVal === Node.Simulator.lastA[idx]) {
             output += '<tr><td>'
         } else {
             output += '<tr class="updatedVal"><td>'
@@ -542,17 +548,17 @@ function updatePage () {
                '</td><td>' +
                '0x' + currVal.toString(16) +
                '</td><td>' +
-               SCSimulator.utils.long2string(currVal) +
+               utils.long2string(currVal) +
                '</td><td>' +
                currVal.toString(10) +
                '</td><td>' +
-               SCSimulator.utils.unsigned2signed(currVal).toString(10) +
+               utils.unsigned2signed(currVal).toString(10) +
                '</td></tr>'
     }
     // B register
     for (let idx = 0; idx < 4; idx++) {
         currVal = ContractState.B[idx]
-        if (SCSimulator.Simulator.lastB !== undefined && currVal === SCSimulator.Simulator.lastB[idx]) {
+        if (Node.Simulator.lastB !== undefined && currVal === Node.Simulator.lastB[idx]) {
             output += '<tr><td>'
         } else {
             output += '<tr class="updatedVal"><td>'
@@ -562,11 +568,11 @@ function updatePage () {
                '</td><td>' +
                '0x' + currVal.toString(16) +
                '</td><td>' +
-               SCSimulator.utils.long2string(currVal) +
+               utils.long2string(currVal) +
                '</td><td>' +
                currVal.toString(10) +
                '</td><td>' +
-               SCSimulator.utils.unsigned2signed(currVal).toString(10) +
+               utils.unsigned2signed(currVal).toString(10) +
                '</td></tr>'
     }
     output += '</tbody></table>'
@@ -594,16 +600,16 @@ function updatePage () {
 
     // Blockchain status
     document.getElementById('blockchain_output').innerHTML = 'Registered accounts = ' +
-        JSON.stringify(SCSimulator.Blockchain.accounts, stringifyReplacer, '   ') +
+        JSON.stringify(Node.Blockchain.accounts, stringifyReplacer, '   ') +
         '<br><br>Registered maps = ' +
-        JSON.stringify(SCSimulator.Blockchain.maps, stringifyReplacer, '   ') +
+        JSON.stringify(Node.Blockchain.maps, stringifyReplacer, '   ') +
         '<br><br>Registered transactions = ' +
-        JSON.stringify(SCSimulator.Blockchain.transactions, stringifyReplacer, '   ') +
+        JSON.stringify(Node.Blockchain.transactions, stringifyReplacer, '   ') +
         '<br><br>Current blockheight = ' +
-        SCSimulator.Blockchain.currentBlock.toString(10)
+        Node.Blockchain.currentBlock.toString(10)
 
     // Save last memory state
-    SCSimulator.Simulator.updateLastMemoryValues()
+    Node.Simulator.updateLastMemoryValues()
 }
 
 // grows text area
@@ -631,7 +637,7 @@ function stringifyReplacer (key, value) {
         return
     }
     if (key === 'balance' || key === 'amount' || key === 'quantity') {
-        return SCSimulator.utils.long2stringBalance(value)
+        return utils.long2stringBalance(value)
     }
     if (typeof value === 'bigint') {
         return value.toString(10)
