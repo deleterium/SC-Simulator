@@ -185,15 +185,14 @@ export class SimNode {
         this.Blockchain.Contracts.forEach(curContract => {
             curContract.postForgeBlock()
         })
-        // Includes user transactions in blockchain. So they were not processed by contracts
-        //  at this height.
-        this.Blockchain.addTransactions(this.scenarioTransactions)
         // This actually increases blockheigth count.
         this.Blockchain.forgeBlock()
         // Checks and activates contracts at this blockheight
         this.Blockchain.Contracts.forEach(curContract => {
             curContract.preForgeBlock()
         })
+        // Includes user transactions in blockchain.
+        this.Blockchain.addTransactions(this.scenarioTransactions)
         return this.Blockchain.getCurrentBlock()
     }
 

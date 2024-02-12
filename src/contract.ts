@@ -228,16 +228,15 @@ export class CONTRACT {
         // Activation by incoming tx
         const incomingTX = this.Blockchain.transactions.find(TX =>
             TX.recipient === this.contract &&
-            TX.processed === false &&
+            TX.blockheight === currentBlock - 1 &&
             TX.amount >= this.activationAmount)
         if (incomingTX !== undefined) {
-            incomingTX.processed = true
             this.contractBlockStartUp()
             return
         }
 
         // Activation by zero activationAmount
-        if (this.activationAmount === 0n) {
+        if (this.activationAmount === 0n && this.Blockchain.getBalanceFrom(this.contract) > 0n) {
             // SmartContracts with zero activation amount never stop
             this.contractBlockStartUp()
         }

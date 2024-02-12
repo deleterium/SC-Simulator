@@ -607,7 +607,6 @@ export class API_MICROCODE {
                 const tx = ContractState.Blockchain.getTxAfterTimestamp(value, ContractState.contract, ContractState.activationAmount)
                 ContractState.A = [0n, 0n, 0n, 0n]
                 if (tx !== undefined) {
-                    tx.processed = true
                     ContractState.A[0] = tx.txid
                 }
             }
