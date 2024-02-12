@@ -1,6 +1,6 @@
 {
     "name": "smartc-signum-simulator",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "description": "Smart contracts simulator and debugger for Signum Blockchain",
     "author": "deleterium",
     "contributors": [
@@ -19,7 +19,7 @@
         "publish:pkg": "npm run build:pkg && npm publish"
     },
     "dependencies": {
-        "smartc-signum-compiler": "^2.1.1"
+        "smartc-signum-compiler": "^2.2.1"
     },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^6.6.0",
