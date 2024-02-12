@@ -1045,6 +1045,18 @@ export class API_MICROCODE {
                 }
                 return ContractState.Blockchain.getTokenQuantityFrom(account, asset)
             }
+        },
+        {
+            funName: 'Get_Account_Balance',
+            opCode: 0x35,
+            execute (ContractState) {
+                const account = ContractState.B[0]
+                const asset = ContractState.B[1]
+                if (asset === 0n) {
+                    return Blockchain.getBalanceFrom(account)
+                }
+                return Blockchain.getTokenQuantityFrom(account, asset)
+            }
         }
     ]
 
