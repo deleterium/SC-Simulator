@@ -524,7 +524,7 @@ function updatePage () {
             output += '<tr class="updatedVal"><td>'
         }
         output += idx + '</td><td class="taleft">' +
-               ContractState.Memory[idx].varName +
+                (ContractState.Memory[idx].debugName ?? ContractState.Memory[idx].varName) +
                '</td><td>' +
                '0x' + currVal.toString(16) +
                '</td><td>' +

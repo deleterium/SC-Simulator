@@ -11,6 +11,7 @@
 export interface MemoryObj {
     varName: string
     value: bigint
+    debugName?: string
 }
 
 /**

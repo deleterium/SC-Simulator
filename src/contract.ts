@@ -47,6 +47,7 @@ export class CONTRACT {
     asmCodeArr: string[]
     cCodeArr: string[]
     cToAsmMap: number[]
+    registersScopeMap: string[]
 
     constructor (Blockchain: BLOCKCHAIN, options: ContractDeployOptions) {
         this.Blockchain = Blockchain
@@ -83,6 +84,7 @@ export class CONTRACT {
         this.asmCodeArr = options.asmSourceCode.split('\n')
         this.cCodeArr = options.cSourceCode ? options.cSourceCode.split('\n') : ['']
         this.cToAsmMap = this.buildMap()
+        this.registersScopeMap = this.buildScopeMap()
         CPU.cpuDeploy(this)
         while (Blockchain.accounts.find(acc => acc.id === this.contract) !== undefined) {
             this.contract++
@@ -103,6 +105,23 @@ export class CONTRACT {
             return this.asmCodeArr.map((line, idx) => idx)
         }
         return cMap
+    }
+
+    buildScopeMap () : string[] {
+        let registers = ''
+        const registerMap = this.asmCodeArr.map((line) => {
+            const verboseScope = /^\s*\^comment scope ([\w,]+)(:\w+)?/.exec(line)
+            if (verboseScope === null) {
+                return registers
+            }
+            if (verboseScope[2] === undefined) {
+                registers = verboseScope[1]
+                return registers
+            }
+            registers = registers.replace(verboseScope[1], verboseScope[2])
+            return registers
+        })
+        return registerMap
     }
 
     run (bps: number[] = []): string {
@@ -313,7 +332,8 @@ export class CONTRACT {
             ERR: this.ERR,
             asmCodeArr: this.asmCodeArr,
             cCodeArr: this.cCodeArr,
-            cToAsmMap: this.cToAsmMap
+            cToAsmMap: this.cToAsmMap,
+            registersScopeMap: this.registersScopeMap
         })
     }
 }

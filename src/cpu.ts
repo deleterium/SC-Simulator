@@ -1165,7 +1165,12 @@ export class CPU {
         }
         ContractState.executionFee += executionCost
         ContractState.balance -= executionCost
-        return InstructionObj.execute(ContractState, currParts)
+        const retState = InstructionObj.execute(ContractState, currParts)
+        const registers = ContractState.registersScopeMap[ContractState.instructionPointer].split(',')
+        registers.forEach((reg, index) => {
+            ContractState.Memory[index].debugName = reg
+        })
+        return retState
     }
 
     /**
