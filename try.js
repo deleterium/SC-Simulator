@@ -379,6 +379,7 @@ function deploy () {
         const ccSimulator = Node.Blockchain.deployContract({
             asmSourceCode: asmCompiler.getAssemblyCode()
         })
+        Node.Simulator.setCurrentSlotContract(ccSimulator.contract)
         inform('Assembly contract successfully deployed in address ' +
             ccSimulator.contract.toString(10) +
             '. Ready to run'
