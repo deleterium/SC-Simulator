@@ -30,6 +30,6 @@
         "typescript": "^5.2.2"
     },
     "dependencies": {
-        "smartc-signum-compiler": "^9999.9.4"
+        "smartc-signum-compiler": "^2.2.1"
     }
 }
