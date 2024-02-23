@@ -37,7 +37,6 @@ export interface BlockchainMapObj {
  *  @member {number} blockheight
  *  @member {bigint} timestamp
  *  @member {bigint[]} messageArr
- *  @member {boolean} processed
  *  @member {? string} messageText
  *  @member {? string} messageHex max 64 chars hexadecimal
  */
@@ -51,7 +50,6 @@ export interface BlockchainTransactionObj {
     tokens: Token[]
     timestamp: bigint
     messageArr: bigint[]
-    processed: boolean
     messageText?: string
     messageHex?: string
 }
@@ -67,7 +65,7 @@ export class BLOCKCHAIN {
 
     constructor () {
         this.txHeight = 0n
-        this.currentBlock = 1
+        this.currentBlock = 0
         this.accounts = []
         this.transactions = []
         this.maps = []
@@ -77,7 +75,7 @@ export class BLOCKCHAIN {
 
     reset () {
         this.txHeight = 0n
-        this.currentBlock = 1
+        this.currentBlock = 0
         this.accounts = []
         this.transactions = []
         this.maps = []
@@ -119,6 +117,10 @@ export class BLOCKCHAIN {
             if (curTX.txid === undefined) {
                 curTX.txid = utils.getRandom64bit()
             }
+            if (this.getTxFrom(curTX.txid)) {
+                console.log(`Warning: transaction ${curTX.txid} already in blockchain. Skipping.`)
+                return
+            }
             // Process message payload to messageArr
             let txhexstring = ''
             if (curTX.messageArr) {
@@ -147,7 +149,6 @@ export class BLOCKCHAIN {
                 amount: curTX.amount,
                 tokens: curTX.tokens,
                 timestamp: timestamp,
-                processed: false,
                 messageArr: utils.hexstring2messagearray(txhexstring),
                 messageText: utils.hexstring2string(txhexstring),
                 messageHex: txhexstring

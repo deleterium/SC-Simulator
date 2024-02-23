@@ -14,6 +14,7 @@ export {
     AccountObj
 }
 export { utils } from './utils'
+export { CONTRACT } from './contract.js'
 
 export const Constants = {
     stepfee: 100000n, // default value from signum: 100000n
