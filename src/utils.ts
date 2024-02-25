@@ -202,30 +202,36 @@ export class utils {
      * Use this function to parse transaction obj text to transaction object with JSON.parse()
      */
     static parseTransactionObj (key: string, value: any) {
+        let strippedValue: string
+        switch (key) {
+        case 'messageHex':
+        case 'messageText':
+            if (typeof value !== 'string') {
+                throw new TypeError(`Expected a 'string' for TransactionObj key '${key}'.`)
+            }
+            return value
+        case 'type':
+        case 'blockheight':
+            switch (typeof value) {
+            case 'string':
+                return Number(value)
+            case 'number':
+                return value
+            }
+            throw new TypeError(`Expected 'string' or 'number' for TransactionObj key '${key}'.`)
+        }
+        // all remaing key cases to be converted to bigint
         switch (typeof value) {
         case 'string':
-            value = value.replace(/_/g, '')
-            if (key === 'blockheight') {
-                return Number(value)
-            }
-            if (/^[\d_]+n$/.test(value)) {
-                return BigInt(value.slice(0, -1))
-            }
-            if (/^[\d_]+$/.test(value)) {
-                return BigInt(value)
-            }
-            if (/^0[xX][\da-fA-F_]+n$/.test(value)) {
-                return BigInt(value.slice(0, -1))
-            }
-            if (/^0[xX][\da-fA-F_]+$/.test(value)) {
-                return BigInt(value)
-            }
-            return value
+            strippedValue = value.replace(/_/g, '')
+            if (/^[\d]+n$/.test(strippedValue)) return BigInt(strippedValue.slice(0, -1))
+            if (/^0[xX][\da-fA-F_]+n$/.test(strippedValue)) return BigInt(strippedValue.slice(0, -1))
+            return BigInt(strippedValue)
         case 'number':
-            if (key !== 'blockheight') {
-                return BigInt(value)
+            if (value > Number.MAX_SAFE_INTEGER) {
+                throw new RangeError(`Number exceeds max safe integer. Use BigInt for key '${key}'`)
             }
-            return value
+            return BigInt(value)
         default:
             return value
         }
