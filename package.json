@@ -1,6 +1,6 @@
 {
     "name": "smartc-signum-simulator",
-    "version": "3.0.1",
+    "version": "3.0.2",
     "description": "Smart contracts simulator and debugger for Signum Blockchain",
     "author": "deleterium",
     "contributors": [
