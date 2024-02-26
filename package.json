@@ -1,13 +1,13 @@
 {
     "name": "smartc-signum-simulator",
-    "version": "3.0.0",
+    "version": "3.1.0-alpha",
     "description": "Smart contracts simulator and debugger for Signum Blockchain",
     "author": "deleterium",
     "contributors": [
         "ohager"
     ],
     "main": "./dist/index.js",
-    "private": false,
+    "private": true,
     "homepage": "https://github.com/deleterium/SC-Simulator",
     "scripts": {
         "dev": "TARGET=dev node esbuild.config.js && npx light-server -s . -p 7000 --no-reload",
