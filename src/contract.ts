@@ -217,7 +217,6 @@ export class CONTRACT {
         this.balance = this.Blockchain.getBalanceFrom(this.contract)
         this.previousBalance = this.balance
         this.tokens = utils.deepCopy(this.Blockchain.getAssetsFromId(this.contract))
-        this.executionFee = 0n
     }
 
     isPendingExecution () {
@@ -271,6 +270,9 @@ export class CONTRACT {
         this.enqueuedTX = []
         this.Blockchain.saveMap(this.contract, this.map)
         this.Blockchain.burnBalance(this.contract, this.executionFee)
+        this.executionFee = 0n
+        const contractAccount = this.Blockchain.getAccountFromId(this.contract)
+        contractAccount.tokens = this.tokens
     }
 
     /**
