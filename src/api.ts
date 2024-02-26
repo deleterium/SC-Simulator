@@ -430,7 +430,11 @@ export class API_MICROCODE {
                 if (ContractState.issuedAssets.find(val => val === asset) === undefined) {
                     return
                 }
-                const accountAsset = ContractState.Blockchain.getAssetFromId(ContractState.contract, asset)
+                const accountAsset = ContractState.tokens.find(tkn => tkn.asset === asset)
+                if (accountAsset === undefined) {
+                    ContractState.tokens.push({asset, quantity})
+                    return
+                }
                 accountAsset.quantity += quantity
             }
         },
