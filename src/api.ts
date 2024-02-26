@@ -2,7 +2,7 @@
 // Project: https://github.com/deleterium/SC-Simulator
 // License: BSD 3-Clause License
 
-import { Constants } from './index.js'
+import { Constants, Token } from './index.js'
 import { CONTRACT } from './contract.js'
 import { HashLib } from './hashlib.js'
 import { utils } from './utils.js'
@@ -664,7 +664,7 @@ export class API_MICROCODE {
                     tx.amount += optionalSignaAmount
                     return
                 }
-                const tkn = []
+                const tkn: Token[] = []
                 if (value !== 0n) {
                     tkn.push({ asset, quantity: value })
                 }
