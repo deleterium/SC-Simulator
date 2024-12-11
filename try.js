@@ -529,7 +529,7 @@ function updatePage () {
                '</td><td>' +
                '0x' + currVal.toString(16) +
                '</td><td>' +
-               utils.long2string(currVal) +
+               utils.escape(utils.long2string(currVal)) +
                '</td><td>' +
                currVal.toString(10) +
                '</td><td>' +
@@ -600,13 +600,13 @@ function updatePage () {
     }
 
     // Blockchain status
-    document.getElementById('blockchain_output').innerHTML = 'Registered accounts = ' +
+    document.getElementById('blockchain_output').innerText = 'Registered accounts = ' +
         JSON.stringify(Node.Blockchain.accounts, stringifyReplacer, '   ') +
-        '<br><br>Registered maps = ' +
+        '\n\nRegistered maps = ' +
         JSON.stringify(Node.Blockchain.maps, stringifyReplacer, '   ') +
-        '<br><br>Registered transactions = ' +
+        '\n\nRegistered transactions = ' +
         JSON.stringify(Node.Blockchain.transactions, stringifyReplacer, '   ') +
-        '<br><br>Current blockheight = ' +
+        '\n\nCurrent blockheight = ' +
         Node.Blockchain.currentBlock.toString(10)
 
     // Save last memory state

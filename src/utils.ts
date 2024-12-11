@@ -81,6 +81,14 @@ export class utils {
         return this.hexstring2string(hexstr)
     }
 
+    static escape (htmlStr: string) {
+        return htmlStr.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+    }
+
     static long2stringBalance (bigintVar: bigint) {
         const digits = bigintVar.toString(10).split('').reverse()
         let outp :string[] = []
