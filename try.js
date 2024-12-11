@@ -634,7 +634,8 @@ function stringifyReplacer (key, value) {
         key === 'B' ||
         key === 'instructionPointer' ||
         key === 'cToAsmMap' ||
-        key === 'cCodeArr') {
+        key === 'cCodeArr' ||
+        key === 'registersScopeMap') {
         return
     }
     if (key === 'balance' || key === 'amount' || key === 'quantity') {
